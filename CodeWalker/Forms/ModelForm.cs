@@ -2543,6 +2543,11 @@ namespace CodeWalker.Forms
             Renderer.renderfragwindows = FragGlassCheckBox.Checked;
         }
 
+        private void FragChildTransfomrsCheckbox_CheckedChanged(object sender, EventArgs e)
+        {
+            Renderer.renderfragchildtransforms = FragChildTransfomrsCheckbox.Checked;
+        }
+
         private void ErrorConsoleCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             ConsolePanel.Visible = ErrorConsoleCheckBox.Checked;

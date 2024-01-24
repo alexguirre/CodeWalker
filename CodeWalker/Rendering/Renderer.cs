@@ -112,6 +112,7 @@ namespace CodeWalker.Rendering
         public bool renderdistlodlights = true; //render distant lod lights (coronas)
         public bool rendercars = false;
         public bool renderfragwindows = false; //render selection geometry for window glass data in fragments 
+        public bool renderfragchildtransforms = false;
 
         public bool rendercollisionmeshes = Settings.Default.ShowCollisionMeshes;
         public bool rendercollisionmeshlayerdrawable = true;
@@ -3065,6 +3066,197 @@ namespace CodeWalker.Rendering
                         }
 
                     }
+                }
+            }
+
+
+
+
+            if (renderfragchildtransforms)
+            {
+                var colred = new Color(255, 0, 0, 255);
+                var colgre = new Color(0, 255, 0, 255);
+                var colblu = new Color(0, 0, 255, 255);
+                var colgrey = new Color(150, 50, 150, 230);
+                var colpur = new Color(255, 0, 255, 255);
+
+                var lod = f?.PhysicsLODGroup?.PhysicsLOD1;
+                var linkAttachments = lod?.FragTransforms?.Matrices;
+                if (lod != null && linkAttachments != null)
+                {
+                    //var bounds = ((BoundComposite)lod.Bound);
+                    //var groupCentersOfGravity = new Vector3[lod.GroupsCount];
+                    //var groupTotalMass = new float[lod.GroupsCount];
+                    //var groupVisited = new bool[lod.ChildrenCount];
+                    //var queue = new Queue<int>();
+                    //queue.Enqueue(0);
+                    //while (queue.Count > 0)
+                    //{
+                    //    var i = queue.Dequeue();
+                    //    var group = lod.Groups.data_items[i];
+                    //    var canProcess = true;
+                    //    for (int cg = 0; cg < group.ChildGroupCount; cg++)
+                    //    {
+                    //        if (!groupVisited[group.ChildGroupIndex + cg])
+                    //        {
+                    //            queue.Enqueue(group.ChildGroupIndex + cg);
+                    //            canProcess = false;
+                    //        }
+                    //    }
+
+                    //    if (!canProcess)
+                    //    {
+                    //        queue.Enqueue(i);
+                    //        continue;
+                    //    }
+
+                    //    var totalMass = 0.0f;
+                    //    for (int k = group.ChildIndex; k < (group.ChildIndex + group.ChildCount); k++)
+                    //    {
+                    //        var child = lod.Children.data_items[k];
+                    //        //var center = bounds.ChildrenTransformation1[k].ToMatrix().TranslationVector + bounds.Children.data_items[k].SphereCenter;
+                    //        var boundCG0 = bounds.Children.data_items[k].SphereCenter;
+                    //        var boundCG1 = child.Drawable1.Bound.SphereCenter;
+                    //        var center = Vector3.TransformCoordinate(boundCG1, bounds.ChildrenTransformation1[k].ToMatrix());
+                    //        groupCentersOfGravity[i] += center * child.PristineMass;
+                    //        totalMass += child.PristineMass;
+                    //    }
+                    //    if (group.ChildGroupIndex != 255)
+                    //    {
+                    //        for (int k = group.ChildGroupIndex; k < (group.ChildGroupIndex + group.ChildGroupCount); k++)
+                    //        {
+                    //            var childGroup = lod.Groups.data_items[k];
+                    //            var center = groupCentersOfGravity[k];
+                    //            groupCentersOfGravity[i] += center * groupTotalMass[k];
+                    //            totalMass += groupTotalMass[k];
+                    //        }
+                    //    }
+                    //    groupTotalMass[i] = totalMass;
+                    //    groupCentersOfGravity[i] /= totalMass;
+
+                    //    groupVisited[i] = true;
+                    //}
+
+                    var bounds = ((BoundComposite)lod.Bound);
+                    // TODO: should be "links" centers of gravity, link != group
+                    // groups can create links (if it has translation/rotation limits in bones?) or use the link of the parent group
+                    // then we want to calculate the center of gravity of the links, by iterating the children that compose them (i.e. the children of the groups that use that link)
+                    // Good luck, have fun :)
+                    var groupIndexToLinkIndex = new int[lod.GroupsCount];
+                    for (int i = 0; i < groupIndexToLinkIndex.Length; i++) { groupIndexToLinkIndex[i] = -1; }
+
+                    var links = new List<List<FragPhysTypeGroup>>();
+                    links.Add(new List<FragPhysTypeGroup>());
+                    for (int gi = 0; gi < lod.GroupsCount; gi++)
+                    {
+                        var g = lod.Groups.data_items[gi];
+                        if (g.ParentIndex != 0xFF)
+                        {
+                            var bone = f.Drawable.Skeleton.BonesMap[lod.Children.data_items[g.ChildIndex].BoneTag];
+                            if ((bone.Flags & (EBoneFlags.LimitTranslation | EBoneFlags.LimitRotation)) != 0 &&
+                                (f.Drawable.Joints.RotationLimits.Any(l => l.BoneId == bone.Tag) || f.Drawable.Joints.TranslationLimits.Any(l => l.BoneId == bone.Tag)))
+                            {
+                                groupIndexToLinkIndex[gi] = links.Count;
+                                links.Add(new List<FragPhysTypeGroup>());
+                            }
+                            else
+                            {
+                                groupIndexToLinkIndex[gi] = groupIndexToLinkIndex[g.ParentIndex];
+                            }
+                        }
+                        else
+                        {
+                            groupIndexToLinkIndex[gi] = 0;
+                        }
+
+                        links[groupIndexToLinkIndex[gi]].Add(g);
+                    }
+                    var linksCentersOfGravity = new Vector3[links.Count];
+                    for (int li = 0; li < linksCentersOfGravity.Length; li++)
+                    {
+                        var totalMass = 0.0f;
+                        foreach (var g in links[li])
+                        {
+                            for (int ci = g.ChildIndex; ci < (g.ChildIndex + g.ChildCount); ci++)
+                            {
+                                var child = lod.Children.data_items[ci];
+                                //var center = bounds.ChildrenTransformation1[k].ToMatrix().TranslationVector + bounds.Children.data_items[k].SphereCenter;
+                                //var boundCG0 = bounds.Children.data_items[ci].SphereCenter;
+                                Vector3 center;
+                                if (child.Drawable1.Bound != null)
+                                {
+                                    var boundCG1 = child.Drawable1.Bound.SphereCenter;
+                                    center = Vector3.TransformCoordinate(boundCG1, bounds.ChildrenTransformation1[ci].ToMatrix());
+                                }
+                                else
+                                {
+                                    center = Vector3.Zero;
+                                }
+                                linksCentersOfGravity[li] += center * child.PristineMass;
+                                totalMass += child.PristineMass;
+                            }
+                        }
+                        linksCentersOfGravity[li] /= totalMass;
+                    }
+                    ;
+                    
+                    var lines = new List<VertexTypePC>();
+                    void drawMarker(Color color1, Color color2, Color color3, Vector3 p, float s)
+                    {
+                        var rgba1 = ((uint)color1.ToRgba());
+                        var rgba2 = ((uint)color2.ToRgba());
+                        var rgba3 = ((uint)color3.ToRgba());
+                        lines.Add(new VertexTypePC { Colour = rgba1, Position = p + new Vector3(s, 0.0f, 0.0f) });
+                        lines.Add(new VertexTypePC { Colour = rgba1, Position = p - new Vector3(s, 0.0f, 0.0f) });
+                        lines.Add(new VertexTypePC { Colour = rgba2, Position = p + new Vector3(0.0f, s, 0.0f) });
+                        lines.Add(new VertexTypePC { Colour = rgba2, Position = p - new Vector3(0.0f, s, 0.0f) });
+                        lines.Add(new VertexTypePC { Colour = rgba3, Position = p + new Vector3(0.0f, 0.0f, s) });
+                        lines.Add(new VertexTypePC { Colour = rgba3, Position = p - new Vector3(0.0f, 0.0f, s) });
+                    }
+
+                    for (int i = 0; i < linkAttachments.Length; i++)
+                    //var i = 2;
+                    {
+                        var calculatedLinkAttachment = calculatedLinkAttachments[i];
+                        var linkAttachment = linkAttachments[i];
+                        var child = lod.Children.data_items[i];
+                        //var childTransform = child.Drawable1.FragMatrix.ToMatrix();
+                        //var childDrwBoundTransform = child.Drawable1.Bound.Transform;
+                        var childBoundTransform = bounds.ChildrenTransformation1[i].ToMatrix();
+
+                        var group = lod.Groups.data_items[child.GroupIndex];
+
+                        //var linkAttachmentTransform = linkAttachment * childTransform;
+
+                        var s = 0.03f;
+                        var p = childBoundTransform.TranslationVector;
+                        drawMarker(colgrey, colgrey, colgrey, p, s);
+
+                        s = 0.025f;
+                        p = childBoundTransform.TranslationVector - linkAttachment.TranslationVector;
+                        drawMarker(colred, colgre, colblu, p, s);
+
+                        //s = 0.05f;
+                        //p = childBoundTransform.TranslationVector - calculatedLinkAttachment.TranslationVector;
+                        //drawMarker(colpur, colpur, colpur, p, s);
+
+                        //p = groupCentersOfGravity[child.GroupIndex];
+                        var linkIndex = groupIndexToLinkIndex[child.GroupIndex];
+                        if (linkIndex != -1)
+                        {
+                            p = linksCentersOfGravity[linkIndex];
+                            s = 0.05f;
+                            drawMarker(colpur, colpur, colpur, p, s);
+                        }
+                        else { }
+                    }
+
+                    //foreach (var cog in groupCentersOfGravity)
+                    //{
+                    //    drawMarker(colred, colred, colred, cog, 0.06f);
+                    //}
+
+                    RenderLines(lines, DepthStencilMode.Enabled);
                 }
             }
 

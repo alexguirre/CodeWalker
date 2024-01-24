@@ -226,6 +226,9 @@ namespace CodeWalker.GameFiles
                 //TestWatermaps();
                 //GetShadersXml();
                 //GetArchetypeTimesList();
+                //GetArchetypeSpecialAttributes();
+                //GetModelsCsv();
+                //GetFragTypeGroupsCsv();
                 //string typestr = PsoTypes.GetTypesString();
             }
             else
@@ -5459,6 +5462,298 @@ namespace CodeWalker.GameFiles
 
 
 
+        }
+        public void GetArchetypeSpecialAttributes()
+        {
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Name,AssetName,specialAttribute");
+            foreach (var ytyp in YtypDict.Values)
+            {
+                foreach (var arch in ytyp.AllArchetypes)
+                {
+                    if (arch.BaseArchetypeDef.specialAttribute != 0)
+                    {
+                        var ta = arch as TimeArchetype;
+                        var t = ta.TimeFlags;
+                        sb.Append(arch.Name);
+                        sb.Append(",");
+                        sb.Append(arch.AssetName);
+                        sb.Append(",");
+                        sb.Append(arch.BaseArchetypeDef.specialAttribute);
+                        sb.AppendLine();
+                    }
+                }
+            }
+
+            var csv = sb.ToString();
+            ;
+
+
+        }
+        public void GetModelsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\grmmodels.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,ExtraId,ModelIndex,MatrixCount,Flags,Type,MatrixIndex,Mask,SkinFlag,TessellatedGeometryCount");
+                void processDrawable(string assetPath, string assetName, string extraId, DrawableBase d)
+                {
+                    if (d.AllModels == null)
+                    {
+                        return;
+                    }
+
+                    for (int i = 0; i < d.AllModels.Length; i++)
+                    {
+                        var m = d.AllModels[i];
+                        w.Write(assetPath);
+                        w.Write(",");
+                        w.Write(assetName);
+                        w.Write(",");
+                        w.Write(extraId);
+                        w.Write(",");
+                        w.Write(i);
+                        w.Write(",");
+                        w.Write(m.SkeletonBindUnk1);
+                        w.Write(",");
+                        w.Write(m.HasSkin);
+                        w.Write(",");
+                        w.Write(m.SkeletonBindUnk2);
+                        w.Write(",");
+                        w.Write(m.BoneIndex);
+                        w.Write(",");
+                        w.Write(m.RenderMask);
+                        w.Write(",");
+                        w.Write(m.Flags & 1);
+                        w.Write(",");
+                        w.Write(m.Flags >> 1);
+                        w.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ydr"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                                if (ydr == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydr.Drawable == null || ydr.Drawable.AllModels == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable data");
+                                    continue;
+                                }
+
+                                processDrawable(entry.Path, ydr.Name, "", ydr.Drawable);
+                            }
+                            else if (entry.NameLower.EndsWith(".ydd"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                                if (ydd == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydd.Dict == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable dictionary data");
+                                    continue;
+                                }
+                                foreach (var kvp in ydd.Dict)
+                                {
+                                    processDrawable(entry.Path, ydd.Name, kvp.Key.ToString(), kvp.Value);
+                                }
+                            }
+                            else if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+                                if (yft.Fragment.Drawable != null)
+                                {
+                                    processDrawable(entry.Path, yft.Name, $"Main", yft.Fragment.Drawable);
+                                }
+                                if ((yft.Fragment.Cloths != null) && (yft.Fragment.Cloths.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var cloth in yft.Fragment.Cloths.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Cloth#{ci}", cloth.Drawable);
+                                        ci++;
+                                    }
+                                }
+                                if ((yft.Fragment.DrawableArray != null) && (yft.Fragment.DrawableArray.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var drawable in yft.Fragment.DrawableArray.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Array#{ci}", drawable);
+                                        ci++;
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetFragTypeGroupsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\fragtypegroups.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,GroupIndex,GroupName,Strength,ForceTransmissionScaleUp,ForceTransmissionScaleDown,JointStiffness,MinSoftAngle1,MaxSoftAngle1,MaxSoftAngle2,MaxSoftAngle3,RotationSpeed,RotationStrength,RestoringStrength,RestoringMaxTorque,LatchStrength,Mass,ChildGroupsIndex,ParentGroupIndex,ChildIndex,NumChildren,NumChildGroups,GlassPaneModelInfoIndex,Flags,MinDamageForce,DamageHealth,WeaponHealth,WeaponScale,VehicleScale,PedScale,RagdollScale,ExplosionScale,ObjectScale,PedInvMassScale,MeleeScale");
+                void processFrag(string assetPath, string assetName, FragType frag)
+                {
+                    var groups = frag?.PhysicsLODGroup?.PhysicsLOD1?.Groups?.data_items;
+                    if (groups == null) return;
+
+                    for (int i = 0; i < groups.Length; i++)
+                    {
+                        var g = groups[i];
+                        w.Write(assetPath);
+                        w.Write(",");
+                        w.Write(assetName);
+                        w.Write(",");
+                        w.Write(i);
+                        w.Write(",");
+                        w.Write(g.Name.ToString());
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.Strength));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.ForceTransmissionScaleUp));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.ForceTransmissionScaleDown));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.JointStiffness));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.MinSoftAngle1));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.MaxSoftAngle1));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.MaxSoftAngle2));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.MaxSoftAngle3));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.RotationSpeed));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.RotationStrength));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.RestoringStrength));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.RestoringMaxTorque));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.LatchStrength));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.Mass));
+                        w.Write(",");
+                        w.Write(g.ChildGroupIndex);
+                        w.Write(",");
+                        w.Write(g.ParentIndex);
+                        w.Write(",");
+                        w.Write(g.ChildIndex);
+                        w.Write(",");
+                        w.Write(g.ChildCount);
+                        w.Write(",");
+                        w.Write(g.ChildGroupCount);
+                        w.Write(",");
+                        w.Write(g.GlassWindowIndex);
+                        w.Write(",");
+                        w.Write(g.GlassFlags);
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.MinDamageForce));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.DamageHealth));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat5C));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat60));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat64));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat68));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat6C));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat70));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat74));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloat78));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(g.UnkFloatA8));
+                        w.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+                                processFrag(entry.Path, yft.Name, yft.Fragment);
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
         }
 
 

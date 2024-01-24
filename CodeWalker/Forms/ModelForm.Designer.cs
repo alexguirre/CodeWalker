@@ -105,6 +105,7 @@
             this.ToolsPanelShowButton = new System.Windows.Forms.Button();
             this.SaveFileDialog = new System.Windows.Forms.SaveFileDialog();
             this.FolderBrowserDialog = new System.Windows.Forms.FolderBrowserDialog();
+            this.FragChildTransfomrsCheckbox = new System.Windows.Forms.CheckBox();
             this.StatusStrip.SuspendLayout();
             this.ConsolePanel.SuspendLayout();
             this.ToolsPanel.SuspendLayout();
@@ -553,6 +554,7 @@
             // 
             // OptionsRenderTabPage
             // 
+            this.OptionsRenderTabPage.Controls.Add(this.FragChildTransfomrsCheckbox);
             this.OptionsRenderTabPage.Controls.Add(this.RenderModeComboBox);
             this.OptionsRenderTabPage.Controls.Add(this.FragGlassCheckBox);
             this.OptionsRenderTabPage.Controls.Add(this.label14);
@@ -969,6 +971,17 @@
             // 
             this.SaveFileDialog.Filter = "All files|*.*";
             // 
+            // FragChildTransfomrsCheckbox
+            // 
+            this.FragChildTransfomrsCheckbox.AutoSize = true;
+            this.FragChildTransfomrsCheckbox.Location = new System.Drawing.Point(6, 237);
+            this.FragChildTransfomrsCheckbox.Name = "FragChildTransfomrsCheckbox";
+            this.FragChildTransfomrsCheckbox.Size = new System.Drawing.Size(190, 17);
+            this.FragChildTransfomrsCheckbox.TabIndex = 26;
+            this.FragChildTransfomrsCheckbox.Text = "Show Fragments Link Attachments";
+            this.FragChildTransfomrsCheckbox.UseVisualStyleBackColor = true;
+            this.FragChildTransfomrsCheckbox.CheckedChanged += new System.EventHandler(this.FragChildTransfomrsCheckbox_CheckedChanged);
+            // 
             // ModelForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -1093,5 +1106,6 @@
         private System.Windows.Forms.ToolStripMenuItem SaveAllTexturesMenuButton;
         private System.Windows.Forms.ToolStripMenuItem SaveSharedTexturesMenuButton;
         private System.Windows.Forms.FolderBrowserDialog FolderBrowserDialog;
+        private System.Windows.Forms.CheckBox FragChildTransfomrsCheckbox;
     }
 }
