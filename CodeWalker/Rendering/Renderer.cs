@@ -3217,7 +3217,6 @@ namespace CodeWalker.Rendering
                     for (int i = 0; i < linkAttachments.Length; i++)
                     //var i = 2;
                     {
-                        var calculatedLinkAttachment = calculatedLinkAttachments[i];
                         var linkAttachment = linkAttachments[i];
                         var child = lod.Children.data_items[i];
                         //var childTransform = child.Drawable1.FragMatrix.ToMatrix();
