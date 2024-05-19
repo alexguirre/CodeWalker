@@ -1944,23 +1944,23 @@ namespace CodeWalker.Rendering
                 }
                 else if (child is BoundCapsule bcap)
                 {
-                    rgeom.Init(bcap, ref xform);
+                    //rgeom.Init(bcap, ref xform);
                 }
                 else if (child is BoundSphere bsph)
                 {
-                    rgeom.Init(bsph, ref xform);
+                    //rgeom.Init(bsph, ref xform);
                 }
                 else if (child is BoundBox bbox)
                 {
-                    rgeom.Init(bbox, ref xform);
+                    //rgeom.Init(bbox, ref xform);
                 }
                 else if (child is BoundCylinder bcyl)
                 {
-                    rgeom.Init(bcyl, ref xform);
+                    //rgeom.Init(bcyl, ref xform);
                 }
                 else if (child is BoundDisc bdisc)
                 {
-                    rgeom.Init(bdisc, ref xform);
+                    //rgeom.Init(bdisc, ref xform);
                 }
                 else if (child != null)
                 { }

@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -226,9 +227,15 @@ namespace CodeWalker.GameFiles
                 //TestWatermaps();
                 //GetShadersXml();
                 //GetArchetypeTimesList();
-                //GetArchetypeSpecialAttributes();
+                //GetArchetypeSpecialAttributesCsv();
+                //GetArchetypeMloTimecycleModifiersCsv();
                 //GetModelsCsv();
                 //GetFragTypeGroupsCsv();
+                //GetFragPhysicsLODCsv();
+                //GetFragBoundTypesCsv();
+                //GetBoundTypesCsv();
+                //GetCableModelsCsv();
+                ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
             else
@@ -5463,31 +5470,127 @@ namespace CodeWalker.GameFiles
 
 
         }
-        public void GetArchetypeSpecialAttributes()
+        public void GetArchetypeSpecialAttributesCsv()
         {
-
-            StringBuilder sb = new StringBuilder();
-            sb.AppendLine("Name,AssetName,specialAttribute");
-            foreach (var ytyp in YtypDict.Values)
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\special_attributes.csv"))
             {
-                foreach (var arch in ytyp.AllArchetypes)
+                w.WriteLine("Name,AssetName,specialAttribute");
+                foreach (RpfFile file in AllRpfs)
                 {
-                    if (arch.BaseArchetypeDef.specialAttribute != 0)
+                    foreach (RpfEntry entry in file.AllEntries)
                     {
-                        var ta = arch as TimeArchetype;
-                        var t = ta.TimeFlags;
-                        sb.Append(arch.Name);
-                        sb.Append(",");
-                        sb.Append(arch.AssetName);
-                        sb.Append(",");
-                        sb.Append(arch.BaseArchetypeDef.specialAttribute);
-                        sb.AppendLine();
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ytyp"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YtypFile ytyp = RpfMan.GetFile<YtypFile>(entry);
+                                if (ytyp == null)
+                                {
+                                    throw new Exception("Couldn't load ytyp file."); //couldn't load the file for some reason... shouldn't happen..
+                                }
+                                if (ytyp.Meta == null)
+                                {
+                                    throw new Exception("ytyp file was not in meta format.");
+                                }
+
+
+                                foreach (var arch in ytyp.AllArchetypes)
+                                {
+                                    if (arch.BaseArchetypeDef.specialAttribute != 0)
+                                    {
+                                        w.Write(arch.Name);
+                                        w.Write(",");
+                                        w.Write(arch.AssetName);
+                                        w.Write(",");
+                                        w.Write(arch.BaseArchetypeDef.specialAttribute);
+                                        w.WriteLine();
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            ;
+                        }
                     }
                 }
             }
 
-            var csv = sb.ToString();
-            ;
+
+        }
+        public void GetArchetypeMloTimecycleModifiersCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\mlo_timecycle_modifiers.csv"))
+            {
+                w.WriteLine("Name,AssetName,TCMIndex,TCMName,SphereX,SphereY,SphereZ,SphereW,Percentage,Range,StartHour,EndHour");
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ytyp"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YtypFile ytyp = RpfMan.GetFile<YtypFile>(entry);
+                                if (ytyp == null)
+                                {
+                                    throw new Exception("Couldn't load ytyp file."); //couldn't load the file for some reason... shouldn't happen..
+                                }
+                                if (ytyp.Meta == null)
+                                {
+                                    throw new Exception("ytyp file was not in meta format.");
+                                }
+
+
+                                foreach (var arch in ytyp.AllArchetypes)
+                                {
+                                    if (arch is MloArchetype mlo)
+                                    {
+                                        for (int i = 0; i < (mlo.timeCycleModifiers?.Length ?? 0); i++)
+                                        {
+                                            var mod = mlo.timeCycleModifiers[i];
+                                            w.Write(arch.Name);
+                                            w.Write(",");
+                                            w.Write(arch.AssetName);
+                                            w.Write(",");
+                                            w.Write(i);
+                                            w.Write(",");
+                                            w.Write(mod.name.ToCleanString());
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.sphere.X));
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.sphere.Y));
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.sphere.Z));
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.sphere.W));
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.percentage));
+                                            w.Write(",");
+                                            w.Write(FloatUtil.ToString(mod.range));
+                                            w.Write(",");
+                                            w.Write(mod.startHour);
+                                            w.Write(",");
+                                            w.Write(mod.endHour);
+                                            w.WriteLine();
+                                        }
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            ;
+                        }
+                    }
+                }
+            }
 
 
         }
@@ -5755,7 +5858,618 @@ namespace CodeWalker.GameFiles
                 }
             }
         }
+        public void GetFragPhysicsLODCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\fragphysicslods.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,SmallestAngInertia,LargestAngInertia,MinMoveForce,DampingLinearC_X,DampingLinearC_Y,DampingLinearC_Z,DampingLinearV_X,DampingLinearV_Y,DampingLinearV_Z,DampingLinearV2_X,DampingLinearV2_Y,DampingLinearV2_Z,DampingAngularC_X,DampingAngularC_Y,DampingAngularC_Z,DampingAngularV_X,DampingAngularV_Y,DampingAngularV_Z,DampingAngularV2_X,DampingAngularV2_Y,DampingAngularV2_Z,RootCGOffset_X,RootCGOffset_Y,RootCGOffset_Z,OriginalRootCGOffset_X,OriginalRootCGOffset_Y,OriginalRootCGOffset_Z,UnbrokenCGOffset_X,UnbrokenCGOffset_Y,UnbrokenCGOffset_Z");
+                void processFrag(string assetPath, string assetName, FragType frag)
+                {
+                    var l = frag?.PhysicsLODGroup?.PhysicsLOD1;
+                    if (l == null) return;
 
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_14h));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_18h));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_1Ch));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearC.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearC.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearC.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV2.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV2.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingLinearV2.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularC.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularC.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularC.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV2.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV2.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.DampingAngularV2.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.PositionOffset.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.PositionOffset.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.PositionOffset.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_40h.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_40h.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_40h.Z));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_50h.X));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_50h.Y));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(l.Unknown_50h.Z));
+                    w.WriteLine();
+
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+                                processFrag(entry.Path, yft.Name, yft.Fragment);
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetFragBoundTypesCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\fragboundtypes.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,HasSphere,HasCapsule,HasBox,HasGeometry,HasBVH,HasComposite,HasDisc,HasCylinder,HasCloth,HasNullBound");
+
+                void processFrag(string assetPath, string assetName, FragType frag)
+                {
+                    var rootBounds = frag?.PhysicsLODGroup?.PhysicsLOD1?.Archetype1?.Bound;
+                    if (rootBounds == null) return;
+
+                    bool hasSphere, hasCapsule, hasBox, hasGeometry, hasBVH, hasComposite, hasDisc, hasCylinder, hasCloth, hasNullBound;
+                    hasSphere = hasCapsule = hasBox = hasGeometry = hasBVH = hasComposite = hasDisc = hasCylinder = hasCloth = hasNullBound = false;
+                    void checkBounds(Bounds b)
+                    {
+                        if (b == null)
+                        {
+                            hasNullBound = true;
+                            return;
+                        }
+
+                        switch (b.Type)
+                        {
+                            case BoundsType.Sphere:
+                                hasSphere = true;
+                                break;
+                            case BoundsType.Capsule:
+                                hasCapsule = true;
+                                break;
+                            case BoundsType.Box:
+                                hasBox = true;
+                                break;
+                            case BoundsType.Geometry:
+                                hasGeometry = true;
+                                break;
+                            case BoundsType.GeometryBVH:
+                                hasBVH = true;
+                                break;
+                            case BoundsType.Composite:
+                                hasComposite = true;
+                                var children = ((BoundComposite)b).Children?.data_items;
+                                if (children != null)
+                                {
+                                    foreach (var c in children)
+                                    {
+                                        checkBounds(c);
+                                    }
+                                }
+                                break;
+                            case BoundsType.Disc:
+                                hasDisc = true;
+                                break;
+                            case BoundsType.Cylinder:
+                                hasCylinder = true;
+                                break;
+                            case BoundsType.Cloth:
+                                hasCloth = true;
+                                break;
+                        }
+                    }
+
+                    checkBounds(rootBounds);
+
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(hasSphere);
+                    w.Write(",");
+                    w.Write(hasCapsule);
+                    w.Write(",");
+                    w.Write(hasBox);
+                    w.Write(",");
+                    w.Write(hasGeometry);
+                    w.Write(",");
+                    w.Write(hasBVH);
+                    w.Write(",");
+                    w.Write(hasComposite);
+                    w.Write(",");
+                    w.Write(hasDisc);
+                    w.Write(",");
+                    w.Write(hasCylinder);
+                    w.Write(",");
+                    w.Write(hasCloth);
+                    w.Write(",");
+                    w.Write(hasNullBound);
+                    w.WriteLine();
+
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+                                processFrag(entry.Path, yft.Name, yft.Fragment);
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetBoundTypesCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\boundtypes.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,HasSphere,HasCapsule,HasBox,HasGeometry,HasBVH,HasComposite,HasDisc,HasCylinder,HasCloth,HasNullBound");
+
+                void processBound(string assetPath, string assetName, Bounds rootBounds)
+                {
+                    if (rootBounds == null) return;
+
+                    bool hasSphere, hasCapsule, hasBox, hasGeometry, hasBVH, hasComposite, hasDisc, hasCylinder, hasCloth, hasNullBound;
+                    hasSphere = hasCapsule = hasBox = hasGeometry = hasBVH = hasComposite = hasDisc = hasCylinder = hasCloth = hasNullBound = false;
+                    void checkBounds(Bounds b)
+                    {
+                        if (b == null)
+                        {
+                            hasNullBound = true;
+                            return;
+                        }
+
+                        switch (b.Type)
+                        {
+                            case BoundsType.Sphere:
+                                hasSphere = true;
+                                break;
+                            case BoundsType.Capsule:
+                                hasCapsule = true;
+                                break;
+                            case BoundsType.Box:
+                                hasBox = true;
+                                break;
+                            case BoundsType.Geometry:
+                                hasGeometry = true;
+                                break;
+                            case BoundsType.GeometryBVH:
+                                hasBVH = true;
+                                break;
+                            case BoundsType.Composite:
+                                hasComposite = true;
+                                var children = ((BoundComposite)b).Children?.data_items;
+                                if (children != null)
+                                {
+                                    foreach (var c in children)
+                                    {
+                                        checkBounds(c);
+                                    }
+                                }
+                                break;
+                            case BoundsType.Disc:
+                                hasDisc = true;
+                                break;
+                            case BoundsType.Cylinder:
+                                hasCylinder = true;
+                                break;
+                            case BoundsType.Cloth:
+                                hasCloth = true;
+                                break;
+                        }
+                    }
+
+                    checkBounds(rootBounds);
+
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(hasSphere);
+                    w.Write(",");
+                    w.Write(hasCapsule);
+                    w.Write(",");
+                    w.Write(hasBox);
+                    w.Write(",");
+                    w.Write(hasGeometry);
+                    w.Write(",");
+                    w.Write(hasBVH);
+                    w.Write(",");
+                    w.Write(hasComposite);
+                    w.Write(",");
+                    w.Write(hasDisc);
+                    w.Write(",");
+                    w.Write(hasCylinder);
+                    w.Write(",");
+                    w.Write(hasCloth);
+                    w.Write(",");
+                    w.Write(hasNullBound);
+                    w.WriteLine();
+
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+
+                                var rootBounds = yft.Fragment?.PhysicsLODGroup?.PhysicsLOD1?.Archetype1?.Bound;
+                                processBound(entry.Path, yft.Name, rootBounds);
+
+                            }
+                            else if (entry.NameLower.EndsWith(".ydr"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                                if (ydr == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydr.Drawable == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable data");
+                                    continue;
+                                }
+
+
+                                var rootBounds = ydr.Drawable?.Bound;
+                                processBound(entry.Path, ydr.Name, rootBounds);
+                            }
+                            else if (entry.NameLower.EndsWith(".ybn"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YbnFile ybn = RpfMan.GetFile<YbnFile>(entry);
+
+                                if (ybn == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ybn.Bounds == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read bounds data");
+                                    continue;
+                                }
+
+
+                                var rootBounds = ybn.Bounds;
+                                processBound(entry.Path, ybn.Name, rootBounds);
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetCableModelsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\cable_models.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,ExtraId,ModelIndex,DrawableNumShaders,MatrixCount,Flags,Type,MatrixIndex,Mask,SkinFlag,TessellatedGeometryCount");
+                void processDrawable(string assetPath, string assetName, string extraId, DrawableBase d)
+                {
+                    if (d.AllModels == null || d.ShaderGroup == null)
+                    {
+                        return;
+                    }
+                    
+                    if (!d.ShaderGroup.Shaders.data_items.Any(s => s.FileName == 0xE5C4E26F/* JenkHash.GenHash("cable.sps") */))
+                    {
+                        return;
+                    }
+
+                    for (int i = 0; i < d.AllModels.Length; i++)
+                    {
+                        var m = d.AllModels[i];
+                        w.Write(assetPath);
+                        w.Write(",");
+                        w.Write(assetName);
+                        w.Write(",");
+                        w.Write(extraId);
+                        w.Write(",");
+                        w.Write(i);
+                        w.Write(",");
+                        w.Write(d.ShaderGroup.Shaders.Count);
+                        w.Write(",");
+                        w.Write(m.SkeletonBindUnk1);
+                        w.Write(",");
+                        w.Write(m.HasSkin);
+                        w.Write(",");
+                        w.Write(m.SkeletonBindUnk2);
+                        w.Write(",");
+                        w.Write(m.BoneIndex);
+                        w.Write(",");
+                        w.Write(m.RenderMask);
+                        w.Write(",");
+                        w.Write(m.Flags & 1);
+                        w.Write(",");
+                        w.Write(m.Flags >> 1);
+                        w.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ydr"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                                if (ydr == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydr.Drawable == null || ydr.Drawable.AllModels == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable data");
+                                    continue;
+                                }
+
+                                processDrawable(entry.Path, ydr.Name, "", ydr.Drawable);
+                            }
+                            else if (entry.NameLower.EndsWith(".ydd"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                                if (ydd == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydd.Dict == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable dictionary data");
+                                    continue;
+                                }
+                                foreach (var kvp in ydd.Dict)
+                                {
+                                    processDrawable(entry.Path, ydd.Name, kvp.Key.ToString(), kvp.Value);
+                                }
+                            }
+                            else if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+                                if (yft.Fragment.Drawable != null)
+                                {
+                                    processDrawable(entry.Path, yft.Name, $"Main", yft.Fragment.Drawable);
+                                }
+                                if ((yft.Fragment.Cloths != null) && (yft.Fragment.Cloths.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var cloth in yft.Fragment.Cloths.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Cloth#{ci}", cloth.Drawable);
+                                        ci++;
+                                    }
+                                }
+                                if ((yft.Fragment.DrawableArray != null) && (yft.Fragment.DrawableArray.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var drawable in yft.Fragment.DrawableArray.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Array#{ci}", drawable);
+                                        ci++;
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void ExportCableModels()
+        {
+            const string OutputDir = "D:\\re\\gta5\\sollumz\\cables\\all";
+            Directory.CreateDirectory(OutputDir);
+            DateTime starttime = DateTime.Now;
+
+
+            List<string> errs = new List<string>();
+            foreach (RpfFile file in AllRpfs)
+            {
+                foreach (RpfEntry entry in file.AllEntries)
+                {
+                    try
+                    {
+                        if (entry.NameLower.EndsWith(".ydr"))
+                        {
+                            UpdateStatus(entry.Path);
+                            YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                            if (ydr == null)
+                            {
+                                errs.Add(entry.Path + ": Couldn't read file");
+                                continue;
+                            }
+                            if (ydr.Drawable == null || ydr.Drawable.AllModels == null)
+                            {
+                                errs.Add(entry.Path + ": Couldn't read drawable data");
+                                continue;
+                            }
+
+                            if (!ydr.Drawable.ShaderGroup.Shaders.data_items.Any(s => s.FileName == 0xE5C4E26F/* JenkHash.GenHash("cable.sps") */))
+                            {
+                                continue;
+                            }
+
+                            string xml = MetaXml.GetXml(ydr, out var filename, OutputDir);
+                            if (string.IsNullOrEmpty(xml))
+                            {
+                                errs.Add("Unable to convert file to XML: " + file.Path);
+                                continue;
+                            }
+
+                            var path = Path.Combine(OutputDir, filename);
+                            File.WriteAllText(path, xml);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        errs.Add(entry.Path + ": " + ex.ToString());
+                    }
+                }
+            }
+        }
 
         private class ShaderXmlDataCollection
         {

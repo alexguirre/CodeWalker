@@ -3171,12 +3171,20 @@ namespace CodeWalker.Rendering
 
                         links[groupIndexToLinkIndex[gi]].Add(g);
                     }
+                    var linksTotalMass = new float[links.Count];
+                    var linksChildrenCenters = new Vector3[links.Count][][];
+                    var linksBoundsCGs = new Vector3[links.Count][][];
                     var linksCentersOfGravity = new Vector3[links.Count];
                     for (int li = 0; li < linksCentersOfGravity.Length; li++)
                     {
                         var totalMass = 0.0f;
+                        var gi = 0;
+                        linksChildrenCenters[li] = new Vector3[links[li].Count][];
+                        linksBoundsCGs[li] = new Vector3[links[li].Count][];
                         foreach (var g in links[li])
                         {
+                            linksChildrenCenters[li][gi] = new Vector3[g.ChildCount];
+                            linksBoundsCGs[li][gi] = new Vector3[g.ChildCount];
                             for (int ci = g.ChildIndex; ci < (g.ChildIndex + g.ChildCount); ci++)
                             {
                                 var child = lod.Children.data_items[ci];
@@ -3186,16 +3194,21 @@ namespace CodeWalker.Rendering
                                 if (child.Drawable1.Bound != null)
                                 {
                                     var boundCG1 = child.Drawable1.Bound.SphereCenter;
+                                    linksBoundsCGs[li][gi][ci - g.ChildIndex] = boundCG1;
                                     center = Vector3.TransformCoordinate(boundCG1, bounds.ChildrenTransformation1[ci].ToMatrix());
                                 }
                                 else
                                 {
                                     center = Vector3.Zero;
+                                    linksBoundsCGs[li][gi][ci - g.ChildIndex] = new Vector3(-9999.99f);
                                 }
+                                linksChildrenCenters[li][gi][ci - g.ChildIndex] = center;
                                 linksCentersOfGravity[li] += center * child.PristineMass;
                                 totalMass += child.PristineMass;
                             }
+                            gi++;
                         }
+                        linksTotalMass[li] = totalMass;
                         linksCentersOfGravity[li] /= totalMass;
                     }
                     ;
@@ -3229,7 +3242,7 @@ namespace CodeWalker.Rendering
 
                         var s = 0.03f;
                         var p = childBoundTransform.TranslationVector;
-                        drawMarker(colgrey, colgrey, colgrey, p, s);
+                        //drawMarker(colgrey, colgrey, colgrey, p, s);
 
                         s = 0.025f;
                         p = childBoundTransform.TranslationVector - linkAttachment.TranslationVector;
