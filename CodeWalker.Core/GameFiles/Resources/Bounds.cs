@@ -1204,6 +1204,10 @@ namespace CodeWalker.GameFiles
             {
                 YbnXml.WriteRawArray(sb, Vertices, indent, "Vertices", "", YbnXml.FormatVector3, 1);
             }
+            if (VerticesShrunk != null)
+            {
+                YbnXml.WriteRawArray(sb, VerticesShrunk, indent, "VerticesShrunk", "", YbnXml.FormatVector3, 1);
+            }
             if (VertexColours != null)
             {
                 YbnXml.WriteRawArray(sb, VertexColours, indent, "VertexColours", "", YbnXml.FormatBoundMaterialColour, 1);
@@ -1211,6 +1215,30 @@ namespace CodeWalker.GameFiles
             if (Polygons != null)
             {
                 YbnXml.WriteCustomItemArray(sb, Polygons, indent, "Polygons");
+            }
+
+            using (var f = new StreamWriter("D:\\re\\gta5\\sollumz\\TESTS\\input_geometry_cw.txt"))
+            {
+                f.Write("\tstatic rage::Vector3 vertices[] = {");
+                for (int i = 0; i < Vertices.Length; i++)
+                {
+                    var v = Vertices[i] + CenterGeom;
+                    f.Write($"\t\t{{ {FloatUtil.ToString(v.X)}, {FloatUtil.ToString(v.Y)}, {FloatUtil.ToString(v.Z)} }},");
+                }
+                f.WriteLine("\t};");
+
+                f.Write("\tstatic u16 indices[] = {");
+                foreach (var p in Polygons)
+                {
+                    f.Write($"\t\t{p.VertexIndices[0]}, {p.VertexIndices[1]}, {p.VertexIndices[2]},");
+                }
+                f.WriteLine("\t};");
+                //        f.writelines([""])
+                //f.writelines(f"\t\t{{ {x}, {y}, {z} }}," for x, y, z in [v + geom_xml.geometry_center for v in geom_xml.vertices])
+                //        f.writelines(["\t};", "\tstatic u16 indices[] = {"])
+                //f.writelines(f"\t\t{t.v1}, {t.v2}, {t.v3}," for t in triangles)
+                //            f.writelines(["\t};"])
+
             }
         }
         public override void ReadXml(XmlNode node)
@@ -1224,6 +1252,7 @@ namespace CodeWalker.GameFiles
             Materials = XmlMeta.ReadItemArray<BoundMaterial_s>(node, "Materials");
             MaterialColours = XmlYbn.GetChildRawBoundMaterialColourArray(node, "MaterialColours");
             Vertices = Xml.GetChildRawVector3ArrayNullable(node, "Vertices");
+            VerticesShrunk = Xml.GetChildRawVector3ArrayNullable(node, "VerticesShrunk");
             VertexColours = XmlYbn.GetChildRawBoundMaterialColourArray(node, "VertexColours");
 
             var pnode = node.SelectSingleNode("Polygons");
@@ -1248,7 +1277,10 @@ namespace CodeWalker.GameFiles
                 }
             }
 
-            CalculateVertsShrunkByMargin();
+            if (VerticesShrunk == null)
+            {
+                CalculateVertsShrunkByMargin();
+            }
             CalculateOctants();
 
             BuildMaterials();
