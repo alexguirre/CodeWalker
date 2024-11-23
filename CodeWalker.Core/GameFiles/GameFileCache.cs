@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace CodeWalker.GameFiles
 {
@@ -228,6 +229,8 @@ namespace CodeWalker.GameFiles
                 //GetShadersXml();
                 //GetArchetypeTimesList();
                 //GetArchetypeSpecialAttributesCsv();
+                //GetArchetypeParticleEffectExtensionsCsv();
+                //GetArchetypeWindDisturbanceExtensionsCsv();
                 //GetArchetypeMloTimecycleModifiersCsv();
                 //GetModelsCsv();
                 //GetFragTypeGroupsCsv();
@@ -235,7 +238,7 @@ namespace CodeWalker.GameFiles
                 //GetFragBoundTypesCsv();
                 //GetBoundTypesCsv();
                 //GetCableModelsCsv();
-                ExportCableModels();
+                //ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
             else
@@ -5505,6 +5508,164 @@ namespace CodeWalker.GameFiles
                                         w.Write(",");
                                         w.Write(arch.BaseArchetypeDef.specialAttribute);
                                         w.WriteLine();
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            ;
+                        }
+                    }
+                }
+            }
+
+
+        }
+        public void GetArchetypeParticleEffectExtensionsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\particle_effect_extensions.csv"))
+            {
+                w.WriteLine("YtypPath,Name,AssetName,ExtensionIndex,ExtensionName,FxName,FxType,BoneTag,Scale,Probability,Flags,FlagHasTint,FlagIgnoreDamagedModel,FlagPlayOnParent,FlagOnlyOnDamagedModel,FlagAllowRubberBulletShotFx,FlagAllowElectricBulletShotFx,Color");
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ytyp"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YtypFile ytyp = RpfMan.GetFile<YtypFile>(entry);
+                                if (ytyp == null)
+                                {
+                                    throw new Exception("Couldn't load ytyp file."); //couldn't load the file for some reason... shouldn't happen..
+                                }
+                                if (ytyp.Meta == null)
+                                {
+                                    throw new Exception("ytyp file was not in meta format.");
+                                }
+
+
+                                foreach (var arch in ytyp.AllArchetypes)
+                                {
+                                    if ((arch != null) && (arch.Extensions != null))
+                                    {
+                                        for (int i = 0; i < arch.Extensions.Length; i++)
+                                        {
+                                            var extension = arch.Extensions[i];
+                                            if (extension is MCExtensionDefParticleEffect ext)
+                                            {
+                                                w.Write(entry.Path);
+                                                w.Write(",");
+                                                w.Write(arch.Name);
+                                                w.Write(",");
+                                                w.Write(arch.AssetName);
+                                                w.Write(",");
+                                                w.Write(i);
+                                                w.Write(",");
+                                                w.Write(ext.Data.name);
+                                                w.Write(",");
+                                                w.Write(ext.fxName);
+                                                w.Write(",");
+                                                w.Write(ext.Data.fxType);
+                                                w.Write(",");
+                                                w.Write(ext.Data.boneTag);
+                                                w.Write(",");
+                                                w.Write(FloatUtil.ToString(ext.Data.scale));
+                                                w.Write(",");
+                                                w.Write(ext.Data.probability);
+                                                w.Write(",");
+                                                w.Write(ext.Data.flags);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 0)) != 0);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 1)) != 0);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 2)) != 0);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 3)) != 0);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 4)) != 0);
+                                                w.Write(",");
+                                                w.Write((ext.Data.flags & (1 << 5)) != 0);
+                                                w.Write(",");
+                                                w.Write("0x" + ext.Data.color.ToString("X08"));
+                                                w.WriteLine();
+                                            }
+                                        }
+                                    }
+                                }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            ;
+                        }
+                    }
+                }
+            }
+
+
+        }
+        public void GetArchetypeWindDisturbanceExtensionsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\wind_disturbance_extensions.csv"))
+            {
+                w.WriteLine("YtypPath,Name,AssetName,ExtensionIndex,ExtensionName,DisturbanceType,BoneTag,Strength,Flags");
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ytyp"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YtypFile ytyp = RpfMan.GetFile<YtypFile>(entry);
+                                if (ytyp == null)
+                                {
+                                    throw new Exception("Couldn't load ytyp file."); //couldn't load the file for some reason... shouldn't happen..
+                                }
+                                if (ytyp.Meta == null)
+                                {
+                                    throw new Exception("ytyp file was not in meta format.");
+                                }
+
+
+                                foreach (var arch in ytyp.AllArchetypes)
+                                {
+                                    if ((arch != null) && (arch.Extensions != null))
+                                    {
+                                        for (int i = 0; i < arch.Extensions.Length; i++)
+                                        {
+                                            var extension = arch.Extensions[i];
+                                            if (extension is MCExtensionDefWindDisturbance ext)
+                                            {
+                                                w.Write(entry.Path);
+                                                w.Write(",");
+                                                w.Write(arch.Name);
+                                                w.Write(",");
+                                                w.Write(arch.AssetName);
+                                                w.Write(",");
+                                                w.Write(i);
+                                                w.Write(",");
+                                                w.Write(ext.Data.name);
+                                                w.Write(",");
+                                                w.Write(ext.Data.disturbanceType);
+                                                w.Write(",");
+                                                w.Write(ext.Data.boneTag);
+                                                w.Write(",");
+                                                w.Write(FloatUtil.ToString(ext.Data.strength));
+                                                w.Write(",");
+                                                w.Write(ext.Data.flags);
+                                                w.WriteLine();
+                                            }
+                                        }
                                     }
                                 }
 
