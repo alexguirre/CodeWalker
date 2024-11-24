@@ -232,6 +232,7 @@ namespace CodeWalker.GameFiles
                 //GetArchetypeSpecialAttributesCsv();
                 //GetArchetypeParticleEffectExtensionsCsv();
                 //GetArchetypeWindDisturbanceExtensionsCsv();
+                GetArchetypeExplosionExtensionsCsv();
                 //GetArchetypeMloTimecycleModifiersCsv();
                 //GetModelsCsv();
                 //GetFragTypeGroupsCsv();
@@ -5671,6 +5672,77 @@ namespace CodeWalker.GameFiles
                                     }
                                 }
 
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            ;
+                        }
+                    }
+                }
+            }
+
+
+        }
+        public void GetArchetypeExplosionExtensionsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\explosion_extensions.csv"))
+            {
+                w.WriteLine("YtypPath,Name,AssetName,ExtensionIndex,ExtensionName,ExplosionName,ExplosionType,ExplosionTag,BoneTag,Flags");
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ytyp"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YtypFile ytyp = RpfMan.GetFile<YtypFile>(entry);
+                                if (ytyp == null)
+                                {
+                                    throw new Exception("Couldn't load ytyp file."); //couldn't load the file for some reason... shouldn't happen..
+                                }
+                                if (ytyp.Meta == null)
+                                {
+                                    throw new Exception("ytyp file was not in meta format.");
+                                }
+
+
+                                foreach (var arch in ytyp.AllArchetypes)
+                                {
+                                    if ((arch != null) && (arch.Extensions != null))
+                                    {
+                                        for (int i = 0; i < arch.Extensions.Length; i++)
+                                        {
+                                            var extension = arch.Extensions[i];
+                                            if (extension is MCExtensionDefExplosionEffect ext)
+                                            {
+                                                w.Write(entry.Path);
+                                                w.Write(",");
+                                                w.Write(arch.Name);
+                                                w.Write(",");
+                                                w.Write(arch.AssetName);
+                                                w.Write(",");
+                                                w.Write(i);
+                                                w.Write(",");
+                                                w.Write(ext.Data.name);
+                                                w.Write(",");
+                                                w.Write(ext.explosionName);
+                                                w.Write(",");
+                                                w.Write(ext.Data.explosionType);
+                                                w.Write(",");
+                                                w.Write(ext.Data.explosionTag);
+                                                w.Write(",");
+                                                w.Write(ext.Data.boneTag);
+                                                w.Write(",");
+                                                w.Write(ext.Data.flags);
+                                                w.WriteLine();
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                         }
