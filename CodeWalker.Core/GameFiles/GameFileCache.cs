@@ -232,9 +232,10 @@ namespace CodeWalker.GameFiles
                 //GetArchetypeSpecialAttributesCsv();
                 //GetArchetypeParticleEffectExtensionsCsv();
                 //GetArchetypeWindDisturbanceExtensionsCsv();
-                GetArchetypeExplosionExtensionsCsv();
+                //GetArchetypeExplosionExtensionsCsv();
                 //GetArchetypeMloTimecycleModifiersCsv();
                 //GetModelsCsv();
+                //GetFragTypesCsv();
                 //GetFragTypeGroupsCsv();
                 //GetFragPhysicsLODCsv();
                 //GetFragBoundTypesCsv();
@@ -5954,6 +5955,70 @@ namespace CodeWalker.GameFiles
                                         ci++;
                                     }
                                 }
+
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetFragTypesCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\fragtypes.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,TemplateAsset,Flags,UnbrokenElasticity,GravityFactor,BuoyancyFactor");
+                void processFrag(string assetPath, string assetName, FragType frag)
+                {
+                    if (frag == null) return;
+
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(frag.Unknown_C0h);
+                    w.Write(",");
+                    w.Write(frag.Unknown_C4h);
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(frag.Unknown_CCh));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(frag.GravityFactor));
+                    w.Write(",");
+                    w.Write(FloatUtil.ToString(frag.BuoyancyFactor));
+                    w.WriteLine();
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+                                processFrag(entry.Path, yft.Name, yft.Fragment);
 
                             }
 
