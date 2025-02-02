@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
@@ -238,6 +239,7 @@ namespace CodeWalker.GameFiles
                 //GetFragBoundTypesCsv();
                 //GetBoundTypesCsv();
                 //GetCableModelsCsv();
+                GetEnvClothModelsCsv();
                 //ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
@@ -6567,6 +6569,201 @@ namespace CodeWalker.GameFiles
                                     }
                                 }
 
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetEnvClothModelsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\env_cloth_models.csv"))
+            using (var w1 = new StreamWriter("D:\\re\\gta5\\db\\data\\env_cloth_models_verlet.csv"))
+            using (var w2 = new StreamWriter("D:\\re\\gta5\\db\\data\\env_cloth_models_instance_tuning.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,HasInstanceTuning,Flags,ControllerFlags,HasCustomEdges,HasVertexNormals,HasCustomBound,HasLODHigh,HasLODMed,HasLODHLow,UserData");
+                w1.WriteLine("AssetPath,AssetName,LOD,Flags,SwitchDistanceUp,SwitchDistanceDown,ClothWeight,DynamicPinListSize,PinnedVerticesCount,HasCustomEdges,HasVertexNormals,CustomBound");
+                w2.WriteLine("AssetPath,AssetName,RotationRate,AngleThreshold,ExtraForceX,ExtraForceY,ExtraForceZ,Flags,Weight,DistanceThreshold,PinVert,NonPinVert0,NonPinVert1,F_WindFeedback,F_FlipIndicesOrder,F_IgnoreDisturbances,F_IsInInterior,F_NoPedCollision,F_UseDistanceThreshold,F_ClampHorizontalForce,F_FlipGravity,F_ActivateOnHit,F_ForceVertexResistance,F_UpdateIfVisible");
+                void processFrag(string assetPath, string assetName, FragType f)
+                {
+                    if (f == null || f.Cloths?.data_items == null || f.Cloths.data_items.Length == 0)
+                    {
+                        return;
+                    }
+
+                    Debug.Assert(f.Cloths.data_items.Length == 1);
+                    var c = f.Cloths.data_items[0];
+                    
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(c.InstanceTuning != null);
+                    w.Write(",");
+                    w.Write(c.Unknown_78h);
+                    w.Write(",");
+                    w.Write(c.Controller?.Type ?? 0);
+                    w.Write(",");
+                    w.Write((c.Controller?.VerletCloth1?.Constraints2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth2?.Constraints2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth3?.Constraints2?.data_items?.Length ?? 0) > 0);
+                    w.Write(",");
+                    w.Write((c.Controller?.VerletCloth1?.Vertices2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth2?.Vertices2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth3?.Vertices2?.data_items?.Length ?? 0) > 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth1?.Bound != null || c.Controller?.VerletCloth2?.Bound != null || c.Controller?.VerletCloth3?.Bound != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth1 != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth2 != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth3 != null);
+                    w.Write(",");
+                    if (c.UnknownData != null && c.UnknownData.Length > 0)
+                    {
+                        w.Write(string.Join("|", c.UnknownData));
+                    }
+                    else
+                    {
+                        w.Write("-");
+                    }
+                    w.WriteLine();
+
+
+                    foreach (var (lod, verlet) in new[] { ("HIGH", c.Controller?.VerletCloth1), ("MED", c.Controller?.VerletCloth2), ("LOW", c.Controller?.VerletCloth3) })
+                    {
+                        if (verlet == null) continue;
+                        w1.Write(assetPath);
+                        w1.Write(",");
+                        w1.Write(assetName);
+                        w1.Write(",");
+                        w1.Write(lod);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_FAh);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_A8h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_ACh);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_158h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_148h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_E8h);
+                        w1.Write(",");
+                        w1.Write((verlet.Constraints2?.data_items?.Length ?? 0) > 0);
+                        w1.Write(",");
+                        w1.Write((verlet.Vertices2?.data_items?.Length ?? 0) > 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Bound?.Type.ToString() ?? "NONE");
+                        w1.WriteLine();
+                    }
+                    
+
+                    if (c.InstanceTuning != null)
+                    {
+                        var t = c.InstanceTuning;
+                        var rotationRate = t.Unknown_10h;
+                        var angleThreshold = t.Unknown_14h;
+                        var extraForceX = t.Unknown_20h;
+                        var extraForceY = t.Unknown_24h;
+                        var extraForceZ = t.Unknown_28h;
+                        var flags = t.Flags;
+                        var weight = t.Unknown_34h;
+                        var distanceThreshold = t.Unknown_38h;
+                        var pinVert = t.Unknown_3Ch & 0xFF;
+                        var nonPinVert0 = (t.Unknown_3Ch >> 8) & 0xFF;
+                        var nonPinVert1 = (t.Unknown_3Ch >> 16) & 0xFF;
+                        var flag_windFeedback = (flags & (1 << 0)) != 0;
+                        var flag_flipIndicesOrder = (flags & (1 << 1)) != 0;
+                        var flag_ignoreDisturbance = (flags & (1 << 2)) != 0;
+                        var flag_isInInterior = (flags & (1 << 3)) != 0;
+                        var flag_noPedCollision = (flags & (1 << 4)) != 0;
+                        var flag_useDistanceThreshold = (flags & (1 << 5)) != 0;
+                        var flag_clampHorizontalForce = (flags & (1 << 6)) != 0;
+                        var flag_flipGravity = (flags & (1 << 7)) != 0;
+                        var flag_activateOnHit = (flags & (1 << 8)) != 0;
+                        var flag_forceVertexResistance = (flags & (1 << 9)) != 0;
+                        var flag_updateIfVisible = (flags & (1 << 10)) != 0;
+                        w2.Write(assetPath);
+                        w2.Write(",");
+                        w2.Write(assetName);
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(rotationRate));
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(angleThreshold));
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(extraForceX));
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(extraForceY));
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(extraForceZ));
+                        w2.Write(",");
+                        w2.Write(flags);
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(weight));
+                        w2.Write(",");
+                        w2.Write(FloatUtil.ToString(distanceThreshold));
+                        w2.Write(",");
+                        w2.Write(pinVert);
+                        w2.Write(",");
+                        w2.Write(nonPinVert0);
+                        w2.Write(",");
+                        w2.Write(nonPinVert1);
+                        w2.Write(",");
+                        w2.Write(flag_windFeedback);
+                        w2.Write(",");
+                        w2.Write(flag_flipIndicesOrder);
+                        w2.Write(",");
+                        w2.Write(flag_ignoreDisturbance);
+                        w2.Write(",");
+                        w2.Write(flag_isInInterior);
+                        w2.Write(",");
+                        w2.Write(flag_noPedCollision);
+                        w2.Write(",");
+                        w2.Write(flag_useDistanceThreshold);
+                        w2.Write(",");
+                        w2.Write(flag_clampHorizontalForce);
+                        w2.Write(",");
+                        w2.Write(flag_flipGravity);
+                        w2.Write(",");
+                        w2.Write(flag_activateOnHit);
+                        w2.Write(",");
+                        w2.Write(flag_forceVertexResistance);
+                        w2.Write(",");
+                        w2.Write(flag_updateIfVisible);
+                        w2.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+                                processFrag(entry.Path, yft.Name, yft.Fragment);
                             }
 
                         }
