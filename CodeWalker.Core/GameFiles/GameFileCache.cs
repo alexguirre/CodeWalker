@@ -241,7 +241,9 @@ namespace CodeWalker.GameFiles
                 //GetFragBoundTypesCsv();
                 //GetBoundTypesCsv();
                 //GetCableModelsCsv();
-                GetEnvClothModelsCsv();
+                //GetEnvClothModelsCsv();
+                //GetCharClothModelsCsv();
+                GetDwdsCsv();
                 //ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
@@ -5688,9 +5690,10 @@ namespace CodeWalker.GameFiles
         }
         public void GetArchetypeExplosionExtensionsCsv()
         {
-            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\explosion_extensions.csv"))
+            HashSet<MetaHash> hashes = new HashSet<MetaHash>();
+            //using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\explosion_extensions.csv"))
             {
-                w.WriteLine("YtypPath,Name,AssetName,ExtensionIndex,ExtensionName,ExplosionName,ExplosionType,ExplosionTag,BoneTag,Flags");
+                //w.WriteLine("YtypPath,Name,AssetName,ExtensionIndex,ExtensionName,ExplosionName,ExplosionType,ExplosionTag,BoneTag,Flags");
                 foreach (RpfFile file in AllRpfs)
                 {
                     foreach (RpfEntry entry in file.AllEntries)
@@ -5718,28 +5721,36 @@ namespace CodeWalker.GameFiles
                                         for (int i = 0; i < arch.Extensions.Length; i++)
                                         {
                                             var extension = arch.Extensions[i];
-                                            if (extension is MCExtensionDefExplosionEffect ext)
+                                            if (extension is MCExtensionDefLadder ext)
                                             {
-                                                w.Write(entry.Path);
-                                                w.Write(",");
-                                                w.Write(arch.Name);
-                                                w.Write(",");
-                                                w.Write(arch.AssetName);
-                                                w.Write(",");
-                                                w.Write(i);
-                                                w.Write(",");
-                                                w.Write(ext.Data.name);
-                                                w.Write(",");
-                                                w.Write(ext.explosionName);
-                                                w.Write(",");
-                                                w.Write(ext.Data.explosionType);
-                                                w.Write(",");
-                                                w.Write(ext.Data.explosionTag);
-                                                w.Write(",");
-                                                w.Write(ext.Data.boneTag);
-                                                w.Write(",");
-                                                w.Write(ext.Data.flags);
-                                                w.WriteLine();
+                                                if (hashes.Add(ext.Data.template))
+                                                {
+                                                    ;
+                                                }
+                                                if (ext.Data.template == 2076747860)
+                                                {
+                                                    ;
+                                                }
+                                                //w.Write(entry.Path);
+                                                //w.Write(",");
+                                                //w.Write(arch.Name);
+                                                //w.Write(",");
+                                                //w.Write(arch.AssetName);
+                                                //w.Write(",");
+                                                //w.Write(i);
+                                                //w.Write(",");
+                                                //w.Write(ext.Data.name);
+                                                //w.Write(",");
+                                                //w.Write(ext.explosionName);
+                                                //w.Write(",");
+                                                //w.Write(ext.Data.explosionType);
+                                                //w.Write(",");
+                                                //w.Write(ext.Data.explosionTag);
+                                                //w.Write(",");
+                                                //w.Write(ext.Data.boneTag);
+                                                //w.Write(",");
+                                                //w.Write(ext.Data.flags);
+                                                //w.WriteLine();
                                             }
                                         }
                                     }
@@ -5754,7 +5765,7 @@ namespace CodeWalker.GameFiles
                     }
                 }
             }
-
+            ;
 
         }
         public void GetArchetypeMloTimecycleModifiersCsv()
@@ -6162,7 +6173,7 @@ namespace CodeWalker.GameFiles
         {
             using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\fragphysicslods.csv"))
             {
-                w.WriteLine("AssetPath,AssetName,SmallestAngInertia,LargestAngInertia,MinMoveForce,DampingLinearC_X,DampingLinearC_Y,DampingLinearC_Z,DampingLinearV_X,DampingLinearV_Y,DampingLinearV_Z,DampingLinearV2_X,DampingLinearV2_Y,DampingLinearV2_Z,DampingAngularC_X,DampingAngularC_Y,DampingAngularC_Z,DampingAngularV_X,DampingAngularV_Y,DampingAngularV_Z,DampingAngularV2_X,DampingAngularV2_Y,DampingAngularV2_Z,RootCGOffset_X,RootCGOffset_Y,RootCGOffset_Z,OriginalRootCGOffset_X,OriginalRootCGOffset_Y,OriginalRootCGOffset_Z,UnbrokenCGOffset_X,UnbrokenCGOffset_Y,UnbrokenCGOffset_Z");
+                w.WriteLine("AssetPath,AssetName,SmallestAngInertia,LargestAngInertia,MinMoveForce,DampingLinearC_X,DampingLinearC_Y,DampingLinearC_Z,DampingLinearV_X,DampingLinearV_Y,DampingLinearV_Z,DampingLinearV2_X,DampingLinearV2_Y,DampingLinearV2_Z,DampingAngularC_X,DampingAngularC_Y,DampingAngularC_Z,DampingAngularV_X,DampingAngularV_Y,DampingAngularV_Z,DampingAngularV2_X,DampingAngularV2_Y,DampingAngularV2_Z,RootCGOffset_X,RootCGOffset_Y,RootCGOffset_Z,OriginalRootCGOffset_X,OriginalRootCGOffset_Y,OriginalRootCGOffset_Z,UnbrokenCGOffset_X,UnbrokenCGOffset_Y,UnbrokenCGOffset_Z,SelfCollisions");
                 void processFrag(string assetPath, string assetName, FragType frag)
                 {
                     var l = frag?.PhysicsLODGroup?.PhysicsLOD1;
@@ -6231,6 +6242,16 @@ namespace CodeWalker.GameFiles
                     w.Write(FloatUtil.ToString(l.Unknown_50h.Y));
                     w.Write(",");
                     w.Write(FloatUtil.ToString(l.Unknown_50h.Z));
+                    w.Write(",");
+                    if (l.UnknownData1 != null && l.UnknownData2 != null)
+                    {
+                        var pairs = l.UnknownData1.Zip(l.UnknownData2, (a, b) => $"{a}-{b}");
+                        w.Write(string.Join("|", pairs));
+                    }
+                    else
+                    {
+                        w.Write("-");
+                    }
                     w.WriteLine();
 
                 }
@@ -6723,8 +6744,8 @@ namespace CodeWalker.GameFiles
             using (var w1 = new StreamWriter("D:\\re\\gta5\\db\\data\\env_cloth_models_verlet.csv"))
             using (var w2 = new StreamWriter("D:\\re\\gta5\\db\\data\\env_cloth_models_instance_tuning.csv"))
             {
-                w.WriteLine("AssetPath,AssetName,HasInstanceTuning,Flags,ControllerFlags,HasCustomEdges,HasVertexNormals,HasCustomBound,HasLODHigh,HasLODMed,HasLODHLow,UserData");
-                w1.WriteLine("AssetPath,AssetName,LOD,Flags,SwitchDistanceUp,SwitchDistanceDown,ClothWeight,DynamicPinListSize,PinnedVerticesCount,HasCustomEdges,HasVertexNormals,CustomBound");
+                w.WriteLine("AssetPath,AssetName,HasInstanceTuning,Flags,ControllerFlags,HasCustomEdges,HasVertexNormals,HasCustomBound,HasLODHigh,HasLODMed,HasLODHLow,UserData,NumPinRadius,NumVertexWeights,NumInflationScale,NumDisplayMap");
+                w1.WriteLine("AssetPath,AssetName,LOD,Flags,SwitchDistanceUp,SwitchDistanceDown,ClothWeight,DynamicPinListSize,PinnedVerticesCount,VerticesCount,EdgesCount,CustomEdgesCount,HasCustomEdges,HasVertexNormals,CustomBound,CustomBoundNumChildren,CustomBoundChildTypes");
                 w2.WriteLine("AssetPath,AssetName,RotationRate,AngleThreshold,ExtraForceX,ExtraForceY,ExtraForceZ,Flags,Weight,DistanceThreshold,PinVert,NonPinVert0,NonPinVert1,F_WindFeedback,F_FlipIndicesOrder,F_IgnoreDisturbances,F_IsInInterior,F_NoPedCollision,F_UseDistanceThreshold,F_ClampHorizontalForce,F_FlipGravity,F_ActivateOnHit,F_ForceVertexResistance,F_UpdateIfVisible");
                 void processFrag(string assetPath, string assetName, FragType f)
                 {
@@ -6766,6 +6787,14 @@ namespace CodeWalker.GameFiles
                     {
                         w.Write("-");
                     }
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_20h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_60h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_A0h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_E0h?.data_items?.Length ?? 0);
                     w.WriteLine();
 
 
@@ -6790,11 +6819,35 @@ namespace CodeWalker.GameFiles
                         w1.Write(",");
                         w1.Write(verlet.Unknown_E8h);
                         w1.Write(",");
+                        w1.Write(verlet.Vertices?.data_items?.Length ?? 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Constraints?.data_items?.Length ?? 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Constraints2?.data_items?.Length ?? 0);
+                        w1.Write(",");
                         w1.Write((verlet.Constraints2?.data_items?.Length ?? 0) > 0);
                         w1.Write(",");
                         w1.Write((verlet.Vertices2?.data_items?.Length ?? 0) > 0);
                         w1.Write(",");
                         w1.Write(verlet.Bound?.Type.ToString() ?? "NONE");
+                        w1.Write(",");
+                        if (verlet.Bound?.Type == BoundsType.Composite)
+                        {
+                            w1.Write(((BoundComposite)verlet.Bound).ChildrenCount1);
+                        }
+                        else
+                        {
+                            w1.Write(-1);
+                        }
+                        w1.Write(",");
+                        if (verlet.Bound?.Type == BoundsType.Composite)
+                        {
+                            w1.Write(string.Join("|", (((BoundComposite)verlet.Bound).Children?.data_items ?? Array.Empty<Bounds>()).Select(b => b.Type.ToString())));
+                        }
+                        else
+                        {
+                            w1.Write("-");
+                        }
                         w1.WriteLine();
                     }
                     
@@ -6903,6 +6956,278 @@ namespace CodeWalker.GameFiles
                                 processFrag(entry.Path, yft.Name, yft.Fragment);
                             }
 
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetCharClothModelsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\char_cloth_models.csv"))
+            using (var w1 = new StreamWriter("D:\\re\\gta5\\db\\data\\char_cloth_models_verlet.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,Name,ControllerFlags,PinRadiusScale,PinRadiusThreshold,WindScale,VerticesCount,IndicesCount,HasCustomEdges,HasVertexNormals,HasCustomBound,HasLODHigh,HasLODMed,HasLODHLow,NumPinRadius,NumVertexWeights,NumInflationScale,NumDisplayMap,BoundsBoneIds,BoundsBoneIndices,Bound,BoundNumChildren,BoundChildTypes");
+                w1.WriteLine("AssetPath,AssetName,LOD,Flags,SwitchDistanceUp,SwitchDistanceDown,ClothWeight,DynamicPinListSize,PinnedVerticesCount,VerticesCount,EdgesCount,CustomEdgesCount,HasCustomEdges,HasVertexNormals,CustomBound,CustomBoundNumChildren,CustomBoundChildTypes");
+                void processCharCloth(string assetPath, string assetName, CharacterCloth c)
+                {
+                    if (c == null)
+                    {
+                        return;
+                    }
+
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(c.NameHash.ToString());
+                    w.Write(",");
+                    w.Write(c.Controller?.Type ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.Unknown_78h ?? 0.0f);
+                    w.Write(",");
+                    w.Write(c.Controller?.Unknown_A0h ?? 0.0f);
+                    w.Write(",");
+                    w.Write(c.Controller?.Unknown_DCh ?? 0.0f);
+                    w.Write(",");
+                    w.Write(c.Controller?.Vertices?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.Indices?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write((c.Controller?.VerletCloth1?.Constraints2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth2?.Constraints2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth3?.Constraints2?.data_items?.Length ?? 0) > 0);
+                    w.Write(",");
+                    w.Write((c.Controller?.VerletCloth1?.Vertices2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth2?.Vertices2?.data_items?.Length ?? 0) > 0 || (c.Controller?.VerletCloth3?.Vertices2?.data_items?.Length ?? 0) > 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth1?.Bound != null || c.Controller?.VerletCloth2?.Bound != null || c.Controller?.VerletCloth3?.Bound != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth1 != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth2 != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.VerletCloth3 != null);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_20h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_60h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_A0h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    w.Write(c.Controller?.BridgeSimGfx?.Unknown_E0h?.data_items?.Length ?? 0);
+                    w.Write(",");
+                    if ((c.Unknown_30h?.data_items?.Length ?? 0) > 0)
+                    {
+                        w.Write(string.Join("|", c.Unknown_30h.data_items));
+                    }
+                    else
+                    {
+                        w.Write("-");
+                    }
+                    w.Write(",");
+                    if ((c.Unknown_90h?.data_items?.Length ?? 0) > 0)
+                    {
+                        w.Write(string.Join("|", c.Unknown_90h.data_items));
+                    }
+                    else
+                    {
+                        w.Write("-");
+                    }
+                    w.Write(",");
+                    w.Write(c.Bound?.Type.ToString() ?? "NONE");
+                    w.Write(",");
+                    if (c.Bound?.Type == BoundsType.Composite)
+                    {
+                        w.Write(((BoundComposite)c.Bound).ChildrenCount1);
+                    }
+                    else
+                    {
+                        w.Write(-1);
+                    }
+                    w.Write(",");
+                    if (c.Bound?.Type == BoundsType.Composite)
+                    {
+                        w.Write(string.Join("|", (((BoundComposite)c.Bound).Children?.data_items ?? Array.Empty<Bounds>()).Select(b => b.Type.ToString())));
+                    }
+                    else
+                    {
+                        w.Write("-");
+                    }
+                    w.WriteLine();
+
+
+                    foreach (var (lod, verlet) in new[] { ("HIGH", c.Controller?.VerletCloth1), ("MED", c.Controller?.VerletCloth2), ("LOW", c.Controller?.VerletCloth3) })
+                    {
+                        if (verlet == null) continue;
+                        w1.Write(assetPath);
+                        w1.Write(",");
+                        w1.Write(assetName);
+                        w1.Write(",");
+                        w1.Write(lod);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_FAh);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_A8h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_ACh);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_158h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_148h);
+                        w1.Write(",");
+                        w1.Write(verlet.Unknown_E8h);
+                        w1.Write(",");
+                        w1.Write(verlet.Vertices?.data_items?.Length ?? 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Constraints?.data_items?.Length ?? 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Constraints2?.data_items?.Length ?? 0);
+                        w1.Write(",");
+                        w1.Write((verlet.Constraints2?.data_items?.Length ?? 0) > 0);
+                        w1.Write(",");
+                        w1.Write((verlet.Vertices2?.data_items?.Length ?? 0) > 0);
+                        w1.Write(",");
+                        w1.Write(verlet.Bound?.Type.ToString() ?? "NONE");
+                        w1.Write(",");
+                        if (verlet.Bound?.Type == BoundsType.Composite)
+                        {
+                            w1.Write(((BoundComposite)verlet.Bound).ChildrenCount1);
+                        }
+                        else
+                        {
+                            w1.Write(-1);
+                        }
+                        w1.Write(",");
+                        if (verlet.Bound?.Type == BoundsType.Composite)
+                        {
+                            w1.Write(string.Join("|", (((BoundComposite)verlet.Bound).Children?.data_items ?? Array.Empty<Bounds>()).Select(b => b.Type.ToString())));
+                        }
+                        else
+                        {
+                            w1.Write("-");
+                        }
+                        w1.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".yld"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YldFile yld = RpfMan.GetFile<YldFile>(entry);
+
+                                if (yld == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yld.ClothDictionary == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read cloth data");
+                                    continue;
+                                }
+                                foreach (var c in yld.ClothDictionary.Clothes?.data_items ?? Array.Empty<CharacterCloth>())
+                                {
+                                    processCharCloth(entry.Path, yld.Name, c);
+                                }
+                            }
+
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetDwdsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\dwds.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,NumSkeletons,NumSameSkeletons,NumComprehensiveSkeleton");
+
+                void processDwd(string assetPath, string assetName, DrawableDictionary dwd)
+                {
+                    var drawables = dwd?.Drawables?.data_items;
+                    if (drawables == null) return;
+
+                    int numSkeletons = 0;
+                    int numSameSkeletons = 0;
+                    int numComprehensiveSameSkeletons = 0;
+                    uint signature1 = 0, signature2 = 0, signature3 = 0;
+                    foreach (var drawable in drawables) {
+                        if (drawable.Skeleton == null) continue;
+
+                        numSkeletons++;
+                        if (numSameSkeletons == 0)
+                        {
+                            signature1 = drawable.Skeleton.Unknown_50h;
+                            signature2 = drawable.Skeleton.Unknown_54h;
+                            signature3 = drawable.Skeleton.Unknown_58h;
+                            numSameSkeletons++;
+                            numComprehensiveSameSkeletons++;
+                        }
+                        else if (signature1 == drawable.Skeleton.Unknown_50h && signature2 == drawable.Skeleton.Unknown_54h)
+                        {
+                            numSameSkeletons++;
+                            if (signature3 == drawable.Skeleton.Unknown_58h)
+                                numComprehensiveSameSkeletons++;
+                        }
+                    }
+
+
+                    w.Write(assetPath);
+                    w.Write(",");
+                    w.Write(assetName);
+                    w.Write(",");
+                    w.Write(numSkeletons);
+                    w.Write(",");
+                    w.Write(numSameSkeletons);
+                    w.Write(",");
+                    w.Write(numComprehensiveSameSkeletons);
+                    w.WriteLine();
+
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ydd"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                                if (ydd == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydd.DrawableDict == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+
+                                processDwd(entry.Path, ydd.Name, ydd.DrawableDict);
+                            }
                         }
                         catch (Exception ex)
                         {
