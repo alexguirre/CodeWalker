@@ -243,7 +243,8 @@ namespace CodeWalker.GameFiles
                 //GetCableModelsCsv();
                 //GetEnvClothModelsCsv();
                 //GetCharClothModelsCsv();
-                GetDwdsCsv();
+                //GetDwdsCsv();
+                GetBoneLimitsCsv();
                 //ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
@@ -7228,6 +7229,178 @@ namespace CodeWalker.GameFiles
 
                                 processDwd(entry.Path, ydd.Name, ydd.DrawableDict);
                             }
+                        }
+                        catch (Exception ex)
+                        {
+                            errs.Add(entry.Path + ": " + ex.ToString());
+                        }
+                    }
+                }
+            }
+        }
+        public void GetBoneLimitsCsv()
+        {
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\bonelimits.csv"))
+            {
+                w.WriteLine("AssetPath,AssetName,ExtraId,Index,BoneTag,BoneName,LimitType,MinX,MinY,MinZ,MaxX,MaxY,MaxZ");
+                void processDrawable(string assetPath, string assetName, string extraId, DrawableBase d)
+                {
+                    if (d.Joints == null)
+                    {
+                        return;
+                    }
+
+                    for (int i = 0; i < (d.Joints.RotationLimits?.Length ?? 0); i++)
+                    {
+                        var l = d.Joints.RotationLimits[i];
+                        w.Write(assetPath);
+                        w.Write(",");
+                        w.Write(assetName);
+                        w.Write(",");
+                        w.Write(extraId);
+                        w.Write(",");
+                        w.Write(i);
+                        w.Write(",");
+                        w.Write(l.BoneId);
+                        w.Write(",");
+                        w.Write(d.Skeleton.Bones?.Items?.FirstOrDefault(b => b.Tag == l.BoneId)?.Name ?? "-");
+                        w.Write(",");
+                        w.Write("ROTATION");
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.X));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.Y));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.Z));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.X));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.Y));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.Z));
+                        w.WriteLine();
+                    }
+
+                    for (int i = 0; i < (d.Joints.TranslationLimits?.Length ?? 0); i++)
+                    {
+                        var l = d.Joints.TranslationLimits[i];
+                        w.Write(assetPath);
+                        w.Write(",");
+                        w.Write(assetName);
+                        w.Write(",");
+                        w.Write(extraId);
+                        w.Write(",");
+                        w.Write(i);
+                        w.Write(",");
+                        w.Write(l.BoneId);
+                        w.Write(",");
+                        w.Write(d.Skeleton.Bones?.Items?.FirstOrDefault(b => b.Tag == l.BoneId)?.Name ?? "-");
+                        w.Write(",");
+                        w.Write("TRANSLATION");
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.X));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.Y));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Min.Z));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.X));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.Y));
+                        w.Write(",");
+                        w.Write(FloatUtil.ToString(l.Max.Z));
+                        w.WriteLine();
+                    }
+                }
+
+                DateTime starttime = DateTime.Now;
+
+
+                List<string> errs = new List<string>();
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (entry.NameLower.EndsWith(".ydr"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                                if (ydr == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydr.Drawable == null || ydr.Drawable.AllModels == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable data");
+                                    continue;
+                                }
+
+                                processDrawable(entry.Path, ydr.Name, "", ydr.Drawable);
+                            }
+                            else if (entry.NameLower.EndsWith(".ydd"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                                if (ydd == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (ydd.Dict == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read drawable dictionary data");
+                                    continue;
+                                }
+                                foreach (var kvp in ydd.Dict)
+                                {
+                                    processDrawable(entry.Path, ydd.Name, kvp.Key.ToString(), kvp.Value);
+                                }
+                            }
+                            else if (entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read file");
+                                    continue;
+                                }
+                                if (yft.Fragment == null)
+                                {
+                                    errs.Add(entry.Path + ": Couldn't read fragment data");
+                                    continue;
+                                }
+                                if (yft.Fragment.Drawable != null)
+                                {
+                                    processDrawable(entry.Path, yft.Name, $"Main", yft.Fragment.Drawable);
+                                }
+                                if ((yft.Fragment.Cloths != null) && (yft.Fragment.Cloths.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var cloth in yft.Fragment.Cloths.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Cloth#{ci}", cloth.Drawable);
+                                        ci++;
+                                    }
+                                }
+                                if ((yft.Fragment.DrawableArray != null) && (yft.Fragment.DrawableArray.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var drawable in yft.Fragment.DrawableArray.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Array#{ci}", drawable);
+                                        ci++;
+                                    }
+                                }
+
+                            }
+
                         }
                         catch (Exception ex)
                         {
