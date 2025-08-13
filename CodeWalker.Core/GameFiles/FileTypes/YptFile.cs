@@ -32,6 +32,14 @@ namespace CodeWalker.GameFiles
         {
         }
 
+        public void Load(byte[] data)
+        {
+            //direct load from a raw, compressed ypt file
+
+            RpfFile.LoadResourceFile(this, data, (uint)GetVersion(RpfManager.IsGen9));
+
+            Loaded = true;
+        }
         public void Load(byte[] data, RpfFileEntry entry)
         {
             Name = entry.Name;
@@ -45,6 +53,20 @@ namespace CodeWalker.GameFiles
             }
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
+
+            if (rd.IsGen9)
+            {
+                switch (resentry.Version)
+                {
+                    case 71:
+                        break;
+                    case 68:
+                        rd.IsGen9 = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
 
             //MemoryUsage = 0;
 
@@ -74,9 +96,28 @@ namespace CodeWalker.GameFiles
 
         public byte[] Save()
         {
-            byte[] data = ResourceBuilder.Build(PtfxList, 68); //ypt is type/version 68...
+            var drawables = PtfxList?.DrawableDictionary?.Drawables?.data_items;
+            var gen9 = RpfManager.IsGen9;
+            if (gen9)
+            {
+                PtfxList?.TextureDictionary?.EnsureGen9();
+                if (drawables != null)
+                {
+                    foreach (var drawable in drawables)
+                    {
+                        drawable?.EnsureGen9();
+                    }
+                }
+            }
+
+            byte[] data = ResourceBuilder.Build(PtfxList, GetVersion(gen9), true, gen9);
 
             return data;
+        }
+
+        public int GetVersion(bool gen9)
+        {
+            return gen9 ? 71 : 68;
         }
 
 

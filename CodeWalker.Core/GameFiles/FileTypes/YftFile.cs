@@ -25,7 +25,7 @@ namespace CodeWalker.GameFiles
         {
             //direct load from a raw, compressed yft file
 
-            RpfFile.LoadResourceFile(this, data, 162);
+            RpfFile.LoadResourceFile(this, data, (uint)GetVersion(RpfManager.IsGen9));
 
             Loaded = true;
         }
@@ -41,6 +41,21 @@ namespace CodeWalker.GameFiles
             }
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
+
+            if (rd.IsGen9)
+            {
+                switch (resentry.Version)
+                {
+                    case 171:
+                        break;
+                    case 162:
+                        rd.IsGen9 = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
 
             Fragment = rd.ReadBlock<FragType>();
 
@@ -63,11 +78,21 @@ namespace CodeWalker.GameFiles
 
         public byte[] Save()
         {
-            byte[] data = ResourceBuilder.Build(Fragment, 162); //yft is type/version 162...
+            var gen9 = RpfManager.IsGen9;
+            if (gen9)
+            {
+                Fragment?.EnsureGen9();
+            }
+
+            byte[] data = ResourceBuilder.Build(Fragment, GetVersion(gen9), true, gen9);
 
             return data;
         }
 
+        public int GetVersion(bool gen9)
+        {
+            return gen9 ? 171 : 162;
+        }
 
     }
 

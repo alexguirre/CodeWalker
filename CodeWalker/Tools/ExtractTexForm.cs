@@ -32,7 +32,7 @@ namespace CodeWalker.Tools
 
             try
             {
-                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, Settings.Default.Key);
+                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, GTAFolder.IsGen9, Settings.Default.Key);
                 KeysLoaded = true;
                 UpdateExtractStatus("Ready to extract.");
             }
@@ -117,6 +117,7 @@ namespace CodeWalker.Tools
             bool bydr = YdrCheckBox.Checked;
             bool bydd = YddCheckBox.Checked;
             bool byft = YftCheckBox.Checked;
+            bool gen9 = GTAFolder.IsGen9Folder(searchpath);
 
             Task.Run(() =>
             {
@@ -126,7 +127,7 @@ namespace CodeWalker.Tools
 
 
                 RpfManager rpfman = new RpfManager();
-                rpfman.Init(searchpath, UpdateExtractStatus, UpdateExtractStatus);
+                rpfman.Init(searchpath, gen9, UpdateExtractStatus, UpdateExtractStatus);
 
 
                 UpdateExtractStatus("Beginning texture extraction...");

@@ -60,7 +60,7 @@ namespace CodeWalker
         string modelname = "dt1_tc_dufo_core";//"dt1_11_fount_decal";//"v_22_overlays";//
         string[] ymaplist;
 
-        Vector3 prevworldpos = new Vector3(0, 0, 100); //also the start pos
+        Vector3 prevworldpos = FloatUtil.ParseVector3String(Settings.Default.StartPosition);
 
 
         public GameFileCache GameFileCache { get { return gameFileCache; } }
@@ -227,6 +227,8 @@ namespace CodeWalker
             PrevMouseHit.WorldForm = this;
 
             initedOk = Renderer.Init();
+
+            GTAFolder.UpdateEnhancedFormTitle(this);
         }
 
 
@@ -314,7 +316,7 @@ namespace CodeWalker
 
         private MapIcon AddIcon(string name, string filename, int texw, int texh, float centerx, float centery, float scale)
         {
-            string filepath = "icons\\" + filename;
+            string filepath = PathUtil.GetFilePath("icons\\" + filename);
             try
             {
                 MapIcon mi = new MapIcon(name, filepath, texw, texh, centerx, centery, scale);
@@ -1540,6 +1542,8 @@ namespace CodeWalker
             {
                 camrel += ori.Multiply(selectionItem.BBOffset);
                 ori = ori * selectionItem.BBOrientation;
+                bbmin = selectionItem.MloRoomDef._Data.bbMin;
+                bbmax = selectionItem.MloRoomDef._Data.bbMax;   
             }
             if ((selectionItem.ArchetypeExtension != null) || (selectionItem.EntityExtension != null) || (selectionItem.CollisionBounds != null))
             {
@@ -2037,6 +2041,17 @@ namespace CodeWalker
         public void UpdateAudioPlacementGraphics(RelFile rel)
         {
             audiozones.PlacementsDict.Remove(rel); //should cause a rebuild to add/remove items
+        }
+        public AudioPlacement GetAudioPlacement(RelFile rel, Dat151RelData reldata)
+        {
+            var placement = audiozones.FindPlacement(rel, reldata);
+            if (placement == null)
+            {
+                if (reldata is Dat151AmbientZone az) placement = new AudioPlacement(rel, az);
+                if (reldata is Dat151AmbientRule ar) placement = new AudioPlacement(rel, ar);
+                if (reldata is Dat151StaticEmitter se) placement = new AudioPlacement(rel, se);
+            }
+            return placement;
         }
 
 
@@ -3619,7 +3634,7 @@ namespace CodeWalker
             if (change)
             {
                 // If an item has been selected the user is likely to use a keybind. We need focus!
-                Focus();
+                //Focus();//DISABLED THIS due to causing problems with using arrows to select in project window!
             }
         }
         public void SelectMulti(MapSelection[] items, bool addSelection = false, bool notifyProject = true)
@@ -4157,45 +4172,143 @@ namespace CodeWalker
         private void LoadWorld()
         {
 
-            UpdateStatus("Loading timecycles...");
-            timecycle.Init(gameFileCache, UpdateStatus);
-            timecycle.SetTime(Renderer.timeofday);
-
-            UpdateStatus("Loading materials...");
-            BoundsMaterialTypes.Init(gameFileCache);
-
-            UpdateStatus("Loading weather...");
-            weather.Init(gameFileCache, UpdateStatus, timecycle);
-            UpdateWeatherTypesComboBox(weather);
-
-            UpdateStatus("Loading clouds...");
-            clouds.Init(gameFileCache, UpdateStatus, weather);
-            UpdateCloudTypesComboBox(clouds);
-
-            UpdateStatus("Loading water...");
-            water.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading trains...");
-            trains.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading scenarios...");
-            scenarios.Init(gameFileCache, UpdateStatus, timecycle);
-
-            UpdateStatus("Loading popzones...");
-            popzones.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading heightmaps...");
-            heightmaps.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading watermaps...");
-            watermaps.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading audio zones...");
-            audiozones.Init(gameFileCache, UpdateStatus);
-
-            UpdateStatus("Loading world...");
-            space.Init(gameFileCache, UpdateStatus);
-
+#if !DEBUG
+            try
+            {
+#endif
+                UpdateStatus("Loading timecycles...");
+                timecycle.Init(gameFileCache, UpdateStatus);
+                timecycle.SetTime(Renderer.timeofday);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading timecycles: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading materials...");
+                BoundsMaterialTypes.Init(gameFileCache);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading materials: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading weather...");
+                weather.Init(gameFileCache, UpdateStatus, timecycle);
+                UpdateWeatherTypesComboBox(weather);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading weather files, ensure you do not have FiveMods installed or any Redux mod. Game may require reinstall.: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading clouds...");
+                clouds.Init(gameFileCache, UpdateStatus, weather);
+                UpdateCloudTypesComboBox(clouds);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading clouds: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading water...");
+                water.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading water: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading trains...");
+                trains.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading trains: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading scenarios...");
+                scenarios.Init(gameFileCache, UpdateStatus, timecycle);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading scenarios: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading popzones...");
+                popzones.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading popzones: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading heightmaps...");
+                heightmaps.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading heightmaps: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading watermaps...");
+                watermaps.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading watermaps: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading audio zones...");
+                audiozones.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading audio zones: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            try
+            {
+#endif
+                UpdateStatus("Loading world...");
+                space.Init(gameFileCache, UpdateStatus);
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error loading world: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+#endif
             UpdateStatus("World loaded");
 
         }
@@ -4252,7 +4365,7 @@ namespace CodeWalker
 
             try
             {
-                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, Settings.Default.Key);
+                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, GTAFolder.IsGen9, Settings.Default.Key);
 
                 //save the key for later if it's not saved already. not really ideal to have this in this thread
                 if (string.IsNullOrEmpty(Settings.Default.Key) && (GTA5Keys.PC_AES_KEY != null))
@@ -4263,7 +4376,7 @@ namespace CodeWalker
             }
             catch
             {
-                MessageBox.Show("Keys not found! This shouldn't happen.");
+                MessageBox.Show("Keys not found! This shouldn't happen, GTA5.exe outdated? CodeWalker outdated?");
                 Close();
                 return;
             }
@@ -4275,8 +4388,20 @@ namespace CodeWalker
             EnableCacheDependentUI();
 
 
-
-            LoadWorld();
+#if !DEBUG
+            try
+            {
+#endif
+                LoadWorld();
+#if !DEBUG
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Failed to load world: {ex.Message}");
+                Close();
+                return;
+            }
+#endif
 
 
 
@@ -4288,23 +4413,47 @@ namespace CodeWalker
             Task.Run(() => {
                 while (formopen && !IsDisposed) //renderer content loop
                 {
-                    bool rcItemsPending = Renderer.ContentThreadProc();
-
-                    if (!rcItemsPending)
+#if !DEBUG
+                    try
                     {
-                        Thread.Sleep(1); //sleep if there's nothing to do
+#endif
+                        bool rcItemsPending = Renderer.ContentThreadProc();
+                        if (!rcItemsPending)
+                        {
+                            Thread.Sleep(1); //sleep if there's nothing to do
+                        }
+#if !DEBUG
                     }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Renderer Failed: {ex.Message}");
+                        Close();
+                        return;
+                    }
+#endif
                 }
             });
 
             while (formopen && !IsDisposed) //main asset loop
             {
-                bool fcItemsPending = gameFileCache.ContentThreadProc();
-
-                if (!fcItemsPending)
+#if !DEBUG
+                try
                 {
-                    Thread.Sleep(1); //sleep if there's nothing to do
+#endif
+                    bool fcItemsPending = gameFileCache.ContentThreadProc();
+                    if (!fcItemsPending)
+                    {
+                        Thread.Sleep(1); //sleep if there's nothing to do
+                    }
+#if !DEBUG
                 }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"GameFileCache Failed: {ex.Message}");
+                    Close();
+                    return;
+                }
+#endif
             }
 
             gameFileCache.Clear();
@@ -4682,8 +4831,10 @@ namespace CodeWalker
             WeatherComboBox.SelectedIndex = Math.Max(WeatherComboBox.FindString(s.Weather), 0);
             WeatherRegionComboBox.SelectedIndex = Math.Max(WeatherRegionComboBox.FindString(s.Region), 0);
             Renderer.individualcloudfrag = s.Clouds;
-            NaturalAmbientLightCheckBox.Checked = s.NatrualAmbientLight;
+            NaturalAmbientLightCheckBox.Checked = s.NaturalAmbientLight;
             ArtificialAmbientLightCheckBox.Checked = s.ArtificialAmbientLight;
+            SavePositionCheckBox.Checked = s.SavePosition;
+            SaveTimeOfDayCheckBox.Checked = s.SaveTimeOfDay;
             
             SetTimeOfDay(s.TimeOfDay);
             Renderer.SetWeatherType(s.Weather);
@@ -4725,19 +4876,45 @@ namespace CodeWalker
             s.ShowStatusBar = StatusBarCheckBox.Checked;
             s.SnapRotationDegrees = (float)SnapAngleUpDown.Value;
             s.SnapGridSize = (float)SnapGridSizeUpDown.Value;
-            s.TimeOfDay = TimeOfDayTrackBar.Value;
             s.LODLights = LODLightsCheckBox.Checked;
-            s.Weather = WeatherComboBox.Text;
-            s.NatrualAmbientLight = NaturalAmbientLightCheckBox.Checked;
+            s.NaturalAmbientLight = NaturalAmbientLightCheckBox.Checked;
             s.ArtificialAmbientLight = ArtificialAmbientLightCheckBox.Checked;
-            s.Region = WeatherRegionComboBox.Text;
-            s.Clouds = CloudsComboBox.Text;
+            s.SavePosition = SavePositionCheckBox.Checked;
+            s.SaveTimeOfDay = SaveTimeOfDayCheckBox.Checked;
+            if (s.SavePosition)
+            {
+                s.StartPosition = FloatUtil.GetVector3String(camEntity?.Position ?? camera.Position);
+            }
+            if (s.SaveTimeOfDay)
+            {
+                s.TimeOfDay = TimeOfDayTrackBar.Value;
+                s.Weather = WeatherComboBox.Text;
+                s.Region = WeatherRegionComboBox.Text;
+                s.Clouds = CloudsComboBox.Text;
+            }
 
             //additional settings from gamefilecache...
             s.EnableMods = gameFileCache.EnableMods;
             s.DLC = gameFileCache.EnableDlc ? gameFileCache.SelectedDlc : "";
 
             s.Save();
+        }
+        private void ResetSettings()
+        {
+            if (MessageBox.Show("Are you sure you want to reset all settings to their default values?", "Reset All Settings", MessageBoxButtons.YesNo) != DialogResult.Yes) return;
+
+            Settings.Default.Reset();
+            LoadSettings();
+
+            if (camEntity != null)
+            {
+                camEntity.Position = FloatUtil.ParseVector3String(Settings.Default.StartPosition);
+                camEntity.Orientation = Quaternion.LookAtLH(Vector3.Zero, Vector3.Up, Vector3.ForwardLH);
+                camera.CurrentRotation = Vector3.Zero;
+                camera.TargetRotation = Vector3.Zero;
+            }
+
+            MessageBox.Show("All settings have been reset to their default values. Please restart CodeWalker.");
         }
 
         private void ShowSettingsForm(string tab = "")
@@ -5082,7 +5259,7 @@ namespace CodeWalker
                 case MapSelectionMode.NavMesh: ProjectForm.NewNavPoly(); break; //.NewNavPoint/.NewNavPortal//how to add points/portals? project window
                 case MapSelectionMode.TrainTrack: ProjectForm.NewTrainNode(); break;
                 case MapSelectionMode.Scenario: ProjectForm.NewScenarioNode(); break; //how to add different node types? project window
-                case MapSelectionMode.Audio: ProjectForm.NewAudioZone(); break; //.NewAudioEmitter // how to add emitters as well? project window
+                case MapSelectionMode.Audio: ProjectForm.NewAudioAmbientZone(); break; //.NewAudioEmitter // how to add emitters as well? project window
             }
         }
         private void CopyItem()
@@ -5140,8 +5317,9 @@ namespace CodeWalker
             else if (item.NavPortal != null) DeleteNavPortal(item.NavPortal);
             else if (item.TrainTrackNode != null) DeleteTrainNode(item.TrainTrackNode);
             else if (item.ScenarioNode != null) DeleteScenarioNode(item.ScenarioNode);
-            else if (item.Audio?.AudioZone != null) DeleteAudioZone(item.Audio);
-            else if (item.Audio?.AudioEmitter != null) DeleteAudioEmitter(item.Audio);
+            else if (item.Audio?.AmbientZone != null) DeleteAudioAmbientZone(item.Audio);
+            else if (item.Audio?.AmbientRule != null) DeleteAudioAmbientRule(item.Audio);
+            else if (item.Audio?.StaticEmitter != null) DeleteAudioStaticEmitter(item.Audio);
         }
         private void DeleteEntity(YmapEntityDef ent)
         {
@@ -5344,30 +5522,45 @@ namespace CodeWalker
                 SelectItem(null);
             }
         }
-        private void DeleteAudioZone(AudioPlacement audio)
+        private void DeleteAudioAmbientZone(AudioPlacement audio)
         {
             if (audio == null) return;
 
             //project not open, or zone not selected there, just remove the zone from the rel...
             var rel = audio.RelFile;
-            if (!rel.RemoveRelData(audio.AudioZone))
+            if (!rel.RemoveRelData(audio.AmbientZone))
             {
-                MessageBox.Show("Unable to remove audio zone. Audio zone editing TODO!");
+                MessageBox.Show("Unable to remove audio ambient zone.");
             }
             else
             {
                 SelectItem(null);
             }
         }
-        private void DeleteAudioEmitter(AudioPlacement audio)
+        private void DeleteAudioAmbientRule(AudioPlacement audio)
         {
             if (audio == null) return;
 
-            //project not open, or zone not selected there, just remove the zone from the rel...
+            //project not open, or rule not selected there, just remove the rule from the rel...
             var rel = audio.RelFile;
-            if (!rel.RemoveRelData(audio.AudioEmitter))
+            if (!rel.RemoveRelData(audio.AmbientRule))
             {
-                MessageBox.Show("Unable to remove audio emitter. Audio zone editing TODO!");
+                MessageBox.Show("Unable to remove audio ambient rule.");
+            }
+            else
+            {
+                SelectItem(null);
+            }
+        }
+        private void DeleteAudioStaticEmitter(AudioPlacement audio)
+        {
+            if (audio == null) return;
+
+            //project not open, or emitter not selected there, just remove the emitter from the rel...
+            var rel = audio.RelFile;
+            if (!rel.RemoveRelData(audio.StaticEmitter))
+            {
+                MessageBox.Show("Unable to remove audio static emitter.");
             }
             else
             {
@@ -5937,6 +6130,11 @@ namespace CodeWalker
 
         private void WorldForm_FormClosing(object sender, FormClosingEventArgs e)
         {
+        }
+
+        private void WorldForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            SaveSettings();
         }
 
         private void WorldForm_MouseDown(object sender, MouseEventArgs e)
@@ -6580,6 +6778,7 @@ namespace CodeWalker
 
         private void ReloadShadersButton_Click(object sender, EventArgs e)
         {
+            //### NO LONGER USED
             if (Renderer.Device == null) return; //can't do this with no device
 
             Cursor = Cursors.WaitCursor;
@@ -6804,22 +7003,14 @@ namespace CodeWalker
             ShowSettingsForm("Advanced");
         }
 
-        private void ReloadSettingsButton_Click(object sender, EventArgs e)
+        private void ResetSettingsButton_Click(object sender, EventArgs e)
         {
-            LoadSettings();
+            ResetSettings();
         }
 
         private void SaveSettingsButton_Click(object sender, EventArgs e)
         {
             SaveSettings();
-        }
-
-        private void QuitButton_Click(object sender, EventArgs e)
-        {
-            if (MessageBox.Show("Really quit?", "", MessageBoxButtons.YesNo) == DialogResult.Yes)
-            {
-                Close();
-            }
         }
 
         private void AboutButton_Click(object sender, EventArgs e)
@@ -6831,6 +7022,15 @@ namespace CodeWalker
         private void ToolsButton_Click(object sender, EventArgs e)
         {
             ToolsMenu.Show(ToolsButton, 0, ToolsButton.Height);
+        }
+
+        private void ToolsMenuConfigureGame_Click(object sender, EventArgs e)
+        {
+            var result = GTAFolder.UpdateGTAFolder(false, false);
+            if (result)
+            {
+                MessageBox.Show("Please restart CodeWalker to use the new folder.");
+            }
         }
 
         private void ToolsMenuRPFBrowser_Click(object sender, EventArgs e)

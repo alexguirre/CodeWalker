@@ -56,6 +56,10 @@ namespace CodeWalker.Rendering
         public uint InstType;
         public Vector3 InstCullingPlaneNormal;
         public float InstCullingPlaneOffset;
+        public uint InstCullingPlaneEnable;
+        public uint InstUnused1;
+        public uint InstUnused2;
+        public uint InstUnused3;
     }
 
     public struct DeferredSSAAPSVars
@@ -128,17 +132,17 @@ namespace CodeWalker.Rendering
         {
             var device = dxman.device;
 
-            byte[] bDirLightVS = File.ReadAllBytes("Shaders\\DirLightVS.cso");
-            byte[] bDirLightPS = File.ReadAllBytes("Shaders\\DirLightPS.cso");
-            byte[] bDirLightMSPS = File.ReadAllBytes("Shaders\\DirLightPS_MS.cso");
-            byte[] bLodLightVS = File.ReadAllBytes("Shaders\\LodLightsVS.cso");
-            byte[] bLodLightPS = File.ReadAllBytes("Shaders\\LodLightsPS.cso");
-            byte[] bLodLightMSPS = File.ReadAllBytes("Shaders\\LodLightsPS_MS.cso");
-            byte[] bLightVS = File.ReadAllBytes("Shaders\\LightVS.cso");
-            byte[] bLightPS = File.ReadAllBytes("Shaders\\LightPS.cso");
-            byte[] bLightMSPS = File.ReadAllBytes("Shaders\\LightPS_MS.cso");
-            byte[] bFinalVS = File.ReadAllBytes("Shaders\\PPFinalPassVS.cso");
-            byte[] bSSAAPS = File.ReadAllBytes("Shaders\\PPSSAAPS.cso");
+            byte[] bDirLightVS = PathUtil.ReadAllBytes("Shaders\\DirLightVS.cso");
+            byte[] bDirLightPS = PathUtil.ReadAllBytes("Shaders\\DirLightPS.cso");
+            byte[] bDirLightMSPS = PathUtil.ReadAllBytes("Shaders\\DirLightPS_MS.cso");
+            byte[] bLodLightVS = PathUtil.ReadAllBytes("Shaders\\LodLightsVS.cso");
+            byte[] bLodLightPS = PathUtil.ReadAllBytes("Shaders\\LodLightsPS.cso");
+            byte[] bLodLightMSPS = PathUtil.ReadAllBytes("Shaders\\LodLightsPS_MS.cso");
+            byte[] bLightVS = PathUtil.ReadAllBytes("Shaders\\LightVS.cso");
+            byte[] bLightPS = PathUtil.ReadAllBytes("Shaders\\LightPS.cso");
+            byte[] bLightMSPS = PathUtil.ReadAllBytes("Shaders\\LightPS_MS.cso");
+            byte[] bFinalVS = PathUtil.ReadAllBytes("Shaders\\PPFinalPassVS.cso");
+            byte[] bSSAAPS = PathUtil.ReadAllBytes("Shaders\\PPSSAAPS.cso");
 
             DirLightVS = new VertexShader(device, bDirLightVS);
             DirLightPS = new PixelShader(device, bDirLightPS);
@@ -573,6 +577,7 @@ namespace CodeWalker.Rendering
                 LightInstVars.Vars.InstConeOuterAngle = rl.ConeOuterAngle;
                 LightInstVars.Vars.InstType = (uint)rl.Type;
                 LightInstVars.Vars.InstCullingPlaneOffset = rl.CullingPlaneOffset;
+                LightInstVars.Vars.InstCullingPlaneEnable = ((rl.Flags & 0x40000) != 0) ? 1u : 0u;
                 LightInstVars.Update(context);
                 LightInstVars.SetVSCBuffer(context, 1);
                 LightInstVars.SetPSCBuffer(context, 2);

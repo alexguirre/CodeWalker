@@ -117,6 +117,7 @@ namespace CodeWalker.GameFiles
         public bool LoadAudio = true;
         private bool PreloadedMode = false;
 
+        private bool GTAGen9;
         private string GTAFolder;
         private string ExcludeFolders;
 
@@ -146,12 +147,13 @@ namespace CodeWalker.GameFiles
 
 
 
-        public GameFileCache(long size, double cacheTime, string folder, string dlc, bool mods, string excludeFolders)
+        public GameFileCache(long size, double cacheTime, string folder, bool gen9, string dlc, bool mods, string excludeFolders)
         {
             mainCache = new Cache<GameFileCacheKey, GameFile>(size, cacheTime);//2GB is good as default
             SelectedDlc = dlc;
             EnableDlc = !string.IsNullOrEmpty(SelectedDlc);
             EnableMods = mods;
+            GTAGen9 = gen9;
             GTAFolder = folder;
             ExcludeFolders = excludeFolders;
         }
@@ -188,7 +190,7 @@ namespace CodeWalker.GameFiles
                 RpfMan.ExcludePaths = GetExcludePaths();
                 RpfMan.EnableMods = EnableMods;
                 RpfMan.BuildExtendedJenkIndex = BuildExtendedJenkIndex;
-                RpfMan.Init(GTAFolder, UpdateStatus, ErrorLog);//, true);
+                RpfMan.Init(GTAFolder, GTAGen9, UpdateStatus, ErrorLog);//, true);
 
 
                 InitGlobal();
@@ -228,6 +230,8 @@ namespace CodeWalker.GameFiles
                 //TestHeightmaps();
                 //TestWatermaps();
                 //GetShadersXml();
+                //GetShadersLegacyConversionXml();
+                //GetShadersGen9ConversionXml();
                 //GetArchetypeTimesList();
                 //GetArchetypeSpecialAttributesCsv();
                 //GetArchetypeParticleEffectExtensionsCsv();
@@ -269,7 +273,7 @@ namespace CodeWalker.GameFiles
             EnableDlc = true;//just so everything (mainly archetypes) will load..
             EnableMods = false;
             RpfMan = new RpfManager(); //try not to use this in this mode...
-            RpfMan.Init(allRpfs);
+            RpfMan.Init(allRpfs, GTAGen9);
 
             AllRpfs = allRpfs;
             BaseRpfs = allRpfs;
@@ -366,6 +370,7 @@ namespace CodeWalker.GameFiles
                 {
                     foreach (XmlNode itemnode in pathsnode.ChildNodes)
                     {
+                        if (itemnode.NodeType != XmlNodeType.Element) continue;
                         DlcPaths.Add(itemnode.InnerText.ToLowerInvariant().Replace('\\', '/').Replace("platform:", "x64"));
                     }
                 }
@@ -1092,7 +1097,7 @@ namespace CodeWalker.GameFiles
                     {
                         try
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YmfFile ymffile = RpfMan.GetFile<YmfFile>(entry);
                             if (ymffile != null)
                             {
@@ -1330,7 +1335,7 @@ namespace CodeWalker.GameFiles
 
         private void AddYtypToDictionary(RpfEntry entry)
         {
-            UpdateStatus(string.Format(entry.Path));
+            UpdateStatus(entry.Path);
             YtypFile ytypfile = RpfMan.GetFile<YtypFile>(entry);
             if (ytypfile == null)
             {
@@ -1881,8 +1886,8 @@ namespace CodeWalker.GameFiles
                 var t = relfile.RelType;
                 switch (t)
                 {
-                    case RelDatFileType.Dat4: 
-                        d = relfile.IsAudioConfig ? audioConfigDict : audioSpeechDict; 
+                    case RelDatFileType.Dat4:
+                        d = relfile.IsAudioConfig ? audioConfigDict : audioSpeechDict;
                         break;
                     case RelDatFileType.Dat10ModularSynth:
                         d = audioSynthsDict;
@@ -2538,6 +2543,11 @@ namespace CodeWalker.GameFiles
                 //UpdateStatus("Loading " + req.RpfFileEntry.Name + "...");
                 //}
 
+#if !DEBUG
+                try
+                {
+#endif
+
                 switch (req.Type)
                 {
                     case GameFileType.Ydr:
@@ -2577,16 +2587,20 @@ namespace CodeWalker.GameFiles
                         break;
                 }
 
-                string str = (req.Loaded ? "Loaded " : "Error loading ") + req.ToString();
-                //string str = string.Format("{0}: {1}: {2}", requestQueue.Count, (req.Loaded ? "Loaded" : "Error loading"), req);
+                UpdateStatus((req.Loaded ? "Loaded " : "Error loading ") + req.ToString());
 
-                UpdateStatus(str);
-                //ErrorLog(str);
                 if (!req.Loaded)
                 {
                     ErrorLog("Error loading " + req.ToString());
                 }
-
+#if !DEBUG
+                }
+                catch (Exception ex)
+                {
+                    ErrorLog($"Failed to load file {req.Name}: {ex.Message}");
+                    //TODO: try to stop subsequent attempts to load this!
+                }
+#endif
 
                 //loadedsomething = true;
             }
@@ -2745,82 +2759,71 @@ namespace CodeWalker.GameFiles
             return drawable;
         }
 
-        public DrawableBase TryGetDrawable(Archetype arche, out bool waitingForLoad)
+        public async Task<(DrawableBase drawable, bool waitingForLoad)> TryGetDrawableAsync(Archetype arche)
         {
-            waitingForLoad = false;
-            if (arche == null) return null;
+            bool waitingForLoad = false;
+            if (arche == null) return (null, false);
+
             uint drawhash = arche.Hash;
             DrawableBase drawable = null;
-            if ((arche.DrawableDict != 0))// && (arche.DrawableDict != arche.Hash))
+
+            // Run Ydd, Ydr, and Yft parts in parallel
+            var yddTask = Task.Run(() => TryGetDrawableFromYdd(arche, drawhash, ref drawable));
+            var ydrTask = Task.Run(() => TryGetDrawableFromYdr(drawhash, ref drawable));
+            var yftTask = Task.Run(() => TryGetDrawableFromYft(drawhash, ref drawable));
+
+            // Wait for any of them to complete
+            await Task.WhenAny(yddTask, ydrTask, yftTask);
+
+            // After any task completes, check if drawable is loaded or if we are still waiting
+            if (drawable != null) return (drawable, waitingForLoad);
+
+            // If all tasks are still running, check their load status
+            if (yddTask.Status != TaskStatus.RanToCompletion || ydrTask.Status != TaskStatus.RanToCompletion || yftTask.Status != TaskStatus.RanToCompletion)
             {
-                //try get drawable from ydd...
-                YddFile ydd = GetYdd(arche.DrawableDict);
-                if (ydd != null)
-                {
-                    if (ydd.Loaded)
-                    {
-                        if (ydd.Dict != null)
-                        {
-                            Drawable d;
-                            ydd.Dict.TryGetValue(drawhash, out d); //can't out to base class?
-                            drawable = d;
-                            if (drawable == null)
-                            {
-                                return null; //drawable wasn't in dict!!
-                            }
-                        }
-                        else
-                        {
-                            return null; //ydd has no dict
-                        }
-                    }
-                    else
-                    {
-                        waitingForLoad = true;
-                        return null; //ydd not loaded yet
-                    }
-                }
-                else
-                {
-                    //return null; //couldn't find drawable dict... quit now?
-                }
-            }
-            if (drawable == null)
-            {
-                //try get drawable from ydr.
-                YdrFile ydr = GetYdr(drawhash);
-                if (ydr != null)
-                {
-                    if (ydr.Loaded)
-                    {
-                        drawable = ydr.Drawable;
-                    }
-                    else
-                    {
-                        waitingForLoad = true;
-                    }
-                }
-                else
-                {
-                    YftFile yft = GetYft(drawhash);
-                    if (yft != null)
-                    {
-                        if (yft.Loaded)
-                        {
-                            if (yft.Fragment != null)
-                            {
-                                drawable = yft.Fragment.Drawable;
-                            }
-                        }
-                        else
-                        {
-                            waitingForLoad = true;
-                        }
-                    }
-                }
+                waitingForLoad = true;
+                return (null, true); // Not ready yet, return early
             }
 
-            return drawable;
+            return (drawable, waitingForLoad);
+        }
+
+        // Helper functions for Ydd, Ydr, and Yft
+
+        private void TryGetDrawableFromYdd(Archetype arche, uint drawhash, ref DrawableBase drawable)
+        {
+            if (arche.DrawableDict != 0)
+            {
+                YddFile ydd = GetYdd(arche.DrawableDict);
+                if (ydd != null && ydd.Loaded && ydd.Dict != null && ydd.Dict.TryGetValue(drawhash, out Drawable d))
+                {
+                    drawable = d;
+                }
+            }
+        }
+
+        private void TryGetDrawableFromYdr(uint drawhash, ref DrawableBase drawable)
+        {
+            if (drawable == null)
+            {
+                YdrFile ydr = GetYdr(drawhash);
+                if (ydr != null && ydr.Loaded)
+                {
+                    drawable = ydr.Drawable;
+                }
+            }
+        }
+
+        private void TryGetDrawableFromYft(uint drawhash, ref DrawableBase drawable)
+        {
+            if (drawable == null)
+            {
+                YftFile yft = GetYft(drawhash);
+                if (yft != null && yft.Loaded)
+                {
+                    drawable = yft.Fragment?.Drawable;
+                }
+            }
         }
 
 
@@ -2874,7 +2877,7 @@ namespace CodeWalker.GameFiles
 
                     if (rfe.NameLower.EndsWith(".rel"))
                     {
-                        UpdateStatus(string.Format(entry.Path));
+                        UpdateStatus(entry.Path);
 
                         RelFile rel = new RelFile(rfe);
                         RpfMan.LoadFile(rel, rfe);
@@ -2924,7 +2927,7 @@ namespace CodeWalker.GameFiles
                                 if (rel3.RelDatasSorted?.Length != rel.RelDatasSorted?.Length)
                                 { } //check nothing went missing...
 
-                                
+
                                 data = rel3.Save(); //full roundtrip!
                                 if (data != null)
                                 {
@@ -3041,7 +3044,7 @@ namespace CodeWalker.GameFiles
                         var n = entry.NameLower;
                         if (n.EndsWith(".ymt"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             //YmtFile ymtfile = RpfMan.GetFile<YmtFile>(entry);
                             //if ((ymtfile != null))
                             //{
@@ -3109,14 +3112,14 @@ namespace CodeWalker.GameFiles
                 {
                     //try
                     //{
-                        var n = entry.NameLower;
-                        if (n.EndsWith(".awc"))
-                        {
-                            UpdateStatus(string.Format(entry.Path));
-                            var awcfile = RpfMan.GetFile<AwcFile>(entry);
-                            if (awcfile != null)
-                            { }
-                        }
+                    var n = entry.NameLower;
+                    if (n.EndsWith(".awc"))
+                    {
+                        UpdateStatus(entry.Path);
+                        var awcfile = RpfMan.GetFile<AwcFile>(entry);
+                        if (awcfile != null)
+                        { }
+                    }
                     //}
                     //catch (Exception ex)
                     //{
@@ -3139,7 +3142,7 @@ namespace CodeWalker.GameFiles
                         var n = entry.NameLower;
                         //if (n.EndsWith(".ymap"))
                         //{
-                        //    UpdateStatus(string.Format(entry.Path));
+                        //    UpdateStatus(entry.Path);
                         //    YmapFile ymapfile = RpfMan.GetFile<YmapFile>(entry);
                         //    if ((ymapfile != null) && (ymapfile.Meta != null))
                         //    {
@@ -3148,7 +3151,7 @@ namespace CodeWalker.GameFiles
                         //}
                         //else if (n.EndsWith(".ytyp"))
                         //{
-                        //    UpdateStatus(string.Format(entry.Path));
+                        //    UpdateStatus(entry.Path);
                         //    YtypFile ytypfile = RpfMan.GetFile<YtypFile>(entry);
                         //    if ((ytypfile != null) && (ytypfile.Meta != null))
                         //    {
@@ -3157,7 +3160,7 @@ namespace CodeWalker.GameFiles
                         //}
                         //else if (n.EndsWith(".ymt"))
                         //{
-                        //    UpdateStatus(string.Format(entry.Path));
+                        //    UpdateStatus(entry.Path);
                         //    YmtFile ymtfile = RpfMan.GetFile<YmtFile>(entry);
                         //    if ((ymtfile != null) && (ymtfile.Meta != null))
                         //    {
@@ -3171,7 +3174,7 @@ namespace CodeWalker.GameFiles
                             var rfe = entry as RpfResourceFileEntry;
                             if (rfe == null) continue;
 
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             var data = rfe.File.ExtractFile(rfe);
                             ResourceDataReader rd = new ResourceDataReader(rfe, data);
@@ -3214,9 +3217,7 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var n = entry.NameLower;
                         if (!(n.EndsWith(".pso") ||
@@ -3235,7 +3236,7 @@ namespace CodeWalker.GameFiles
                             {
                                 if (PsoFile.IsPSO(ms))
                                 {
-                                    UpdateStatus(string.Format(entry.Path));
+                                    UpdateStatus(entry.Path);
 
                                     var pso = new PsoFile();
                                     pso.Load(ms);
@@ -3284,13 +3285,11 @@ namespace CodeWalker.GameFiles
                             }
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
 
@@ -3328,7 +3327,7 @@ namespace CodeWalker.GameFiles
                         {
                             if (RbfFile.IsRBF(ms))
                             {
-                                UpdateStatus(string.Format(entry.Path));
+                                UpdateStatus(entry.Path);
 
                                 var rbf = new RbfFile();
                                 rbf.Load(ms);
@@ -3392,16 +3391,14 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var rfe = entry as RpfFileEntry;
                         if (rfe == null) continue;
 
                         if (rfe.NameLower.EndsWith(".cut"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             CutFile cut = new CutFile(rfe);
                             RpfMan.LoadFile(cut, rfe);
@@ -3409,16 +3406,14 @@ namespace CodeWalker.GameFiles
                             //PsoTypes.EnsurePsoTypes(cut.Pso);
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
-            
+
             string str = PsoTypes.GetTypesInitString();
             if (!string.IsNullOrEmpty(str))
             {
@@ -3433,29 +3428,25 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var rfe = entry as RpfFileEntry;
                         if (rfe == null) continue;
 
                         if (rfe.NameLower.EndsWith(".yld"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             YldFile yld = new YldFile(rfe);
                             RpfMan.LoadFile(yld, rfe);
 
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
 
@@ -3464,45 +3455,44 @@ namespace CodeWalker.GameFiles
         }
         public void TestYeds()
         {
-
+            bool xmltest = true;
             var exceptions = new List<Exception>();
 
             foreach (RpfFile file in AllRpfs)
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var rfe = entry as RpfFileEntry;
                         if (rfe == null) continue;
 
                         if (rfe.NameLower.EndsWith(".yed"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             YedFile yed = new YedFile(rfe);
                             RpfMan.LoadFile(yed, rfe);
 
-                            var xml = YedXml.GetXml(yed);
-                            var yed2 = XmlYed.GetYed(xml);
-                            var data2 = yed2.Save();
-                            var yed3 = new YedFile();
-                            RpfFile.LoadResourceFile(yed3, data2, 25);//full roundtrip
-                            var xml2 = YedXml.GetXml(yed3);
-                            if (xml != xml2)
-                            { }
+                            if (xmltest)
+                            {
+                                var xml = YedXml.GetXml(yed);
+                                var yed2 = XmlYed.GetYed(xml);
+                                var data2 = yed2.Save();
+                                var yed3 = new YedFile();
+                                RpfFile.LoadResourceFile(yed3, data2, 25);//full roundtrip
+                                var xml2 = YedXml.GetXml(yed3);
+                                if (xml != xml2)
+                                { }//no hitting
+                            }
 
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
 
@@ -3518,11 +3508,11 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-                //try
-                //{
+                    //try
+                    //{
                     if (entry.NameLower.EndsWith(".ycd"))
                     {
-                        UpdateStatus(string.Format(entry.Path));
+                        UpdateStatus(entry.Path);
                         YcdFile ycd1 = RpfMan.GetFile<YcdFile>(entry);
                         if (ycd1 == null)
                         {
@@ -3761,16 +3751,16 @@ namespace CodeWalker.GameFiles
                     }
                     //if (entry.NameLower.EndsWith(".awc")) //awcs can also contain clip dicts..
                     //{
-                    //    UpdateStatus(string.Format(entry.Path));
+                    //    UpdateStatus(entry.Path);
                     //    AwcFile awcfile = RpfMan.GetFile<AwcFile>(entry);
                     //    if ((awcfile != null))
                     //    { }
                     //}
                     //}
-                //catch (Exception ex)
-                //{
-                //    UpdateStatus("Error! " + ex.ToString());
-                //}
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //}
                 }
             }
 
@@ -3791,13 +3781,13 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ytd"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YtdFile ytdfile = null;
                             try
                             {
                                 ytdfile = RpfMan.GetFile<YtdFile>(entry);
                             }
-                            catch(Exception ex)
+                            catch (Exception ex)
                             {
                                 UpdateStatus("Error! " + ex.ToString());
                                 errorfiles.Add(entry);
@@ -3886,7 +3876,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ybn"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YbnFile ybn = null;
                             try
                             {
@@ -4045,8 +4035,8 @@ namespace CodeWalker.GameFiles
         }
         public void TestYdrs()
         {
-            bool savetest = false;
-            bool boundsonly = true;
+            bool savetest = true;
+            bool boundsonly = false;
             var errorfiles = new List<RpfEntry>();
             foreach (RpfFile file in AllRpfs)
             {
@@ -4056,7 +4046,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ydr"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YdrFile ydr = null;
                             try
                             {
@@ -4082,7 +4072,7 @@ namespace CodeWalker.GameFiles
                                 string bytelen = TextUtil.GetBytesReadable(bytes.Length);
 
                                 var ydr2 = new YdrFile();
-                                RpfFile.LoadResourceFile(ydr2, bytes, 165);
+                                RpfFile.LoadResourceFile(ydr2, bytes, (uint)ydr.GetVersion(RpfManager.IsGen9));
 
                                 if (ydr2.Drawable == null)
                                 { continue; }
@@ -4113,7 +4103,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ydd"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YddFile ydd = null;
                             try
                             {
@@ -4150,7 +4140,7 @@ namespace CodeWalker.GameFiles
                                 uint h = 0;
                                 foreach (uint th in ydd.DrawableDict.Hashes)
                                 {
-                                    if (th <= h) 
+                                    if (th <= h)
                                     { } //should never happen
                                     h = th;
                                 }
@@ -4168,7 +4158,9 @@ namespace CodeWalker.GameFiles
         }
         public void TestYfts()
         {
+            bool xmltest = false;
             bool savetest = false;
+            bool glasstest = false;
             var errorfiles = new List<RpfEntry>();
             var sb = new StringBuilder();
             var flagdict = new Dictionary<uint, int>();
@@ -4180,7 +4172,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".yft"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YftFile yft = null;
                             try
                             {
@@ -4190,6 +4182,14 @@ namespace CodeWalker.GameFiles
                             {
                                 UpdateStatus("Error! " + ex.ToString());
                                 errorfiles.Add(entry);
+                            }
+                            if (xmltest && (yft != null) && (yft.Fragment != null))
+                            {
+                                var xml = YftXml.GetXml(yft);
+                                var yft2 = XmlYft.GetYft(xml);//can't do full roundtrip here due to embedded textures
+                                var xml2 = YftXml.GetXml(yft2);
+                                if (xml != xml2)
+                                { }
                             }
                             if (savetest && (yft != null) && (yft.Fragment != null))
                             {
@@ -4213,7 +4213,7 @@ namespace CodeWalker.GameFiles
 
                             }
 
-                            if (yft?.Fragment?.GlassWindows?.data_items != null)
+                            if (glasstest && (yft?.Fragment?.GlassWindows?.data_items != null))
                             {
                                 var lastf = -1;
                                 for (int i = 0; i < yft.Fragment.GlassWindows.data_items.Length; i++)
@@ -4255,7 +4255,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ypt"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YptFile ypt = null;
                             try
                             {
@@ -4311,7 +4311,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ynv"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YnvFile ynv = null;
                             try
                             {
@@ -4381,9 +4381,7 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var rfe = entry as RpfFileEntry;
                         if (rfe == null) continue;
@@ -4392,7 +4390,7 @@ namespace CodeWalker.GameFiles
                         {
                             if (rfe.NameLower == "agencyprep001.yvr") continue; //this file seems corrupted
 
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             YvrFile yvr = new YvrFile(rfe);
                             RpfMan.LoadFile(yvr, rfe);
@@ -4408,13 +4406,11 @@ namespace CodeWalker.GameFiles
 
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
 
@@ -4430,16 +4426,14 @@ namespace CodeWalker.GameFiles
             {
                 foreach (RpfEntry entry in file.AllEntries)
                 {
-#if !DEBUG
-                    try
-#endif
+                    //try
                     {
                         var rfe = entry as RpfFileEntry;
                         if (rfe == null) continue;
 
                         if (rfe.NameLower.EndsWith(".ywr"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
 
                             YwrFile ywr = new YwrFile(rfe);
                             RpfMan.LoadFile(ywr, rfe);
@@ -4455,13 +4449,11 @@ namespace CodeWalker.GameFiles
 
                         }
                     }
-#if !DEBUG
-                    catch (Exception ex)
-                    {
-                        UpdateStatus("Error! " + ex.ToString());
-                        exceptions.Add(ex);
-                    }
-#endif
+                    //catch (Exception ex)
+                    //{
+                    //    UpdateStatus("Error! " + ex.ToString());
+                    //    exceptions.Add(ex);
+                    //}
                 }
             }
 
@@ -4478,7 +4470,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".ymap"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YmapFile ymapfile = RpfMan.GetFile<YmapFile>(entry);
                             if ((ymapfile != null))// && (ymapfile.Meta != null))
                             { }
@@ -4504,7 +4496,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (rfe.NameLower.EndsWith(".ypdb"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YpdbFile ypdb = RpfMan.GetFile<YpdbFile>(entry);
                             if (ypdb != null)
                             {
@@ -4551,7 +4543,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (rfe.NameLower.EndsWith(".yfd"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             YfdFile yfd = RpfMan.GetFile<YfdFile>(entry);
                             if (yfd != null)
                             {
@@ -4596,10 +4588,10 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".mrf"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             MrfFile mrffile = RpfMan.GetFile<MrfFile>(entry);
                             if (mrffile != null)
-                            { 
+                            {
                                 var odata = entry.File.ExtractFile(entry as RpfFileEntry);
                                 var ndata = mrffile.Save();
                                 if (ndata.Length == odata.Length)
@@ -4764,7 +4756,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith(".fxc"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             var fxcfile = RpfMan.GetFile<FxcFile>(entry);
                             if (fxcfile != null)
                             {
@@ -4836,7 +4828,7 @@ namespace CodeWalker.GameFiles
             //        {
             //            if (entry.NameLower.EndsWith(".ymap"))
             //            {
-            //                UpdateStatus(string.Format(entry.Path));
+            //                UpdateStatus(entry.Path);
             //                YmapFile ymapfile = RpfMan.GetFile<YmapFile>(entry);
             //                if ((ymapfile != null))// && (ymapfile.Meta != null))
             //                {
@@ -4959,8 +4951,8 @@ namespace CodeWalker.GameFiles
 
             DateTime starttime = DateTime.Now;
 
-            bool doydr = false;
-            bool doydd = false;
+            bool doydr = true;
+            bool doydd = true;
             bool doyft = true;
 
             List<string> errs = new List<string>();
@@ -5177,7 +5169,7 @@ namespace CodeWalker.GameFiles
                     {
                         if (entry.NameLower.EndsWith("cache_y.dat"))// || entry.NameLower.EndsWith("cache_y_bank.dat"))
                         {
-                            UpdateStatus(string.Format(entry.Path));
+                            UpdateStatus(entry.Path);
                             var cdfile = RpfMan.GetFile<CacheDatFile>(entry);
                             if (cdfile != null)
                             {
@@ -5219,7 +5211,7 @@ namespace CodeWalker.GameFiles
                 {
                     if (entry.NameLower.EndsWith(".dat") && entry.NameLower.StartsWith("heightmap"))
                     {
-                        UpdateStatus(string.Format(entry.Path));
+                        UpdateStatus(entry.Path);
                         HeightmapFile hmf = null;
                         hmf = RpfMan.GetFile<HeightmapFile>(entry);
                         var d1 = hmf.RawFileData;
@@ -5254,7 +5246,7 @@ namespace CodeWalker.GameFiles
                 {
                     if (entry.NameLower.EndsWith(".dat") && entry.NameLower.StartsWith("waterheight"))
                     {
-                        UpdateStatus(string.Format(entry.Path));
+                        UpdateStatus(entry.Path);
                         WatermapFile wmf = null;
                         wmf = RpfMan.GetFile<WatermapFile>(entry);
                         //var d1 = wmf.RawFileData;
@@ -5447,6 +5439,311 @@ namespace CodeWalker.GameFiles
 
 
         }
+        public void GetShadersLegacyConversionXml()
+        {
+            //on legacy game files, iterate fxc files and generate mapping of old>new param names
+            //for use by legacy/gen9 conversions
+            //gen9 param names seem to use the other name as speficied in the fxc files...
+
+
+            var dict = new Dictionary<string, Dictionary<string, string>>();//shadername:(legacyparam:gen9param)
+
+            foreach (RpfFile file in AllRpfs)
+            {
+                foreach (RpfEntry entry in file.AllEntries)
+                {
+                    if (entry.NameLower.EndsWith(".fxc"))
+                    {
+                        UpdateStatus(entry.Path);
+                        var fxcfile = RpfMan.GetFile<FxcFile>(entry);
+                        if (fxcfile != null)
+                        {
+                            var sname = entry.GetShortNameLower();
+                            dict.TryGetValue(sname, out var pdict);
+                            if (pdict == null)
+                            {
+                                pdict = new Dictionary<string, string>();
+                                dict[sname] = pdict;
+                            }
+
+                            var paras = fxcfile.Variables2;
+                            if (paras != null)
+                            {
+                                foreach (var para in paras)
+                                {
+                                    if (para == null) continue;
+                                    pdict[para.Name1] = para.Name2;
+                                }
+                            }
+
+                        }
+                    }
+                }
+            }
+
+            var shadernames = dict.Keys.ToList();
+            shadernames.Sort();
+
+            var sb = new StringBuilder();
+            sb.AppendLine(MetaXml.XmlHeader);
+            MetaXml.OpenTag(sb, 0, "ShadersLegacyConversion");
+            foreach (var shadername in shadernames)
+            {
+                MetaXml.OpenTag(sb, 1, "Item");
+                MetaXml.StringTag(sb, 2, "Name", shadername);
+                MetaXml.StringTag(sb, 2, "FileName", shadername.ToLowerInvariant() + ".sps");
+                MetaXml.OpenTag(sb, 2, "Parameters");
+                dict.TryGetValue(shadername, out var pdict);
+                if (pdict != null)
+                {
+                    var otstr = "Item name=\"{0}\" gen9=\"{1}\"";
+                    foreach (var kvp in pdict)
+                    {
+                        MetaXml.SelfClosingTag(sb, 3, string.Format(otstr, kvp.Key, kvp.Value));
+                    }
+                }
+                MetaXml.CloseTag(sb, 2, "Parameters");
+                MetaXml.CloseTag(sb, 1, "Item");
+            }
+            MetaXml.CloseTag(sb, 0, "ShadersLegacyConversion");
+
+            var xml = sb.ToString();
+
+            File.WriteAllText("C:\\ShadersLegacyConversion.xml", xml);
+
+
+        }
+        public void GetShadersGen9ConversionXml()
+        {
+            //on gen9 game files, iterate drawables and find param offsets and types
+            //use the ShadersLegacyConversion.xml to generate ShadersGen9Conversion.xml,
+            //filtering to required shaders only and including the offsets and types.
+            //this should allow for rebuilding the gen9 params buffers from legacy ones.
+
+
+            bool doydr = true;
+            bool doydd = true;
+            bool doyft = true;
+            bool doypt = true;
+
+            var data = new Dictionary<MetaHash, ShaderGen9XmlDataCollection>();
+
+            void updateDC(ShaderGen9XmlDataCollection dc, ShaderParamInfoG9[] infos, ShaderFX s)
+            {
+                var pi = s.G9_ParamInfos;
+                var pb = s.ParametersList;
+                var bc = pi.NumBuffers;
+                var bsizs = pb.G9_BufferSizes;
+
+                var blens = new int[bc];
+                for (int i = 0; i < bc; i++)
+                {
+                    blens[i] = (int)bsizs[i];
+                }
+                dc.BufferSizes = blens;
+                dc.ParamInfos = infos;
+                dc.SamplerValues = pb.G9_Samplers;
+
+            }
+            void collectDrawable(DrawableBase d)
+            {
+                if (d?.AllModels == null) return;
+                foreach (var model in d.AllModels)
+                {
+                    if (model?.Geometries == null) continue;
+                    foreach (var geom in model.Geometries)
+                    {
+                        var s = geom?.Shader;
+                        if (s == null) continue;
+                        data.TryGetValue(s.Name, out var dc);
+                        if (dc == null)
+                        {
+                            dc = new ShaderGen9XmlDataCollection();
+                            dc.Name = s.Name;
+                            updateDC(dc, s.G9_ParamInfos.Params, s);
+                            data[s.Name] = dc;
+                        }
+                        else
+                        {
+                            var pi = s.G9_ParamInfos;
+                            var pb = s.ParametersList;
+                            var bc = pi.NumBuffers;
+                            var bsizs = pb.G9_BufferSizes;
+                            var changed = false;//sometimes params don't all match... ugh
+                            if (dc.BufferSizes.Length != bc)
+                            { changed = true; }
+                            for (int i = 0; i < bc; i++)
+                            {
+                                if (dc.BufferSizes[i] != bsizs[i])
+                                { /*changed = true;*/ break; }
+                            }
+                            if (dc.ParamInfos.Length < pi.Params.Length)
+                            { changed = true; }//just take whichever has the most params.. maybe not 100% correct since really we want the latest ones
+                            if (changed)
+                            {
+                                updateDC(dc, pi.Params, s);
+                            }
+                        }
+
+                    }
+                }
+            }
+
+            foreach (RpfFile file in AllRpfs)
+            {
+                foreach (RpfEntry entry in file.AllEntries)
+                {
+                    try
+                    {
+                        if (doydr && entry.NameLower.EndsWith(".ydr"))
+                        {
+                            if (entry is RpfResourceFileEntry re)
+                            {
+                                if (re.Version != 159) continue;
+                            }
+
+                            UpdateStatus(entry.Path);
+                            YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                            if (ydr == null) { continue; }
+                            if (ydr.Drawable == null) { continue; }
+                            collectDrawable(ydr.Drawable);
+                        }
+                        else if (doydd & entry.NameLower.EndsWith(".ydd"))
+                        {
+                            UpdateStatus(entry.Path);
+                            YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                            if (ydd == null) { continue; }
+                            if (ydd.Dict == null) { continue; }
+                            foreach (var drawable in ydd.Dict.Values)
+                            {
+                                collectDrawable(drawable);
+                            }
+                        }
+                        else if (doyft && entry.NameLower.EndsWith(".yft"))
+                        {
+                            UpdateStatus(entry.Path);
+                            YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                            if (yft == null) { continue; }
+                            if (yft.Fragment == null) { continue; }
+                            if (yft.Fragment.Drawable != null)
+                            {
+                                collectDrawable(yft.Fragment.Drawable);
+                            }
+                            if ((yft.Fragment.Cloths != null) && (yft.Fragment.Cloths.data_items != null))
+                            {
+                                foreach (var cloth in yft.Fragment.Cloths.data_items)
+                                {
+                                    collectDrawable(cloth.Drawable);
+                                }
+                            }
+                            if ((yft.Fragment.DrawableArray != null) && (yft.Fragment.DrawableArray.data_items != null))
+                            {
+                                foreach (var drawable in yft.Fragment.DrawableArray.data_items)
+                                {
+                                    collectDrawable(drawable);
+                                }
+                            }
+                        }
+                        else if (doypt && entry.NameLower.EndsWith(".ypt"))
+                        {
+                            UpdateStatus(entry.Path);
+                            YptFile ypt = RpfMan.GetFile<YptFile>(entry);
+
+                            if (ypt == null) { continue; }
+                            if (ypt.DrawableDict == null) { continue; }
+                            foreach (var drawable in ypt.DrawableDict.Values)
+                            {
+                                collectDrawable(drawable);
+                            }
+                        }
+                    }
+                    catch //(Exception ex)
+                    { }
+                }
+            }
+
+
+
+
+
+            var legxml = File.ReadAllText("C:\\ShadersLegacyConversion.xml");
+            var xdoc = new XmlDocument();
+            xdoc.LoadXml(legxml);
+            var shaders = xdoc.SelectNodes("ShadersLegacyConversion/Item");
+            var shadernodes = new Dictionary<MetaHash, XmlNode>();
+            var shadernames = new List<string>();
+            foreach (XmlNode shader in shaders)
+            {
+                var name = Xml.GetChildInnerText(shader, "Name")?.ToLowerInvariant();
+                var hash = new MetaHash(JenkHash.GenHash(name));
+                if (data.ContainsKey(hash) == false) continue;
+                shadernodes[hash] = shader;
+                shadernames.Add(name);
+            }
+            shadernames.Sort();
+
+            if (shadernames.Count != data.Count)
+            { }//this shouldn't happen - something was missing?
+
+
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine(MetaXml.XmlHeader);
+            MetaXml.OpenTag(sb, 0, "ShadersGen9Conversion");
+            foreach (var name in shadernames)
+            {
+                var hash = new MetaHash(JenkHash.GenHash(name));
+                data.TryGetValue(hash, out var cd);
+                shadernodes.TryGetValue(hash, out var sn);
+                if (cd == null) continue;//shouldn't happen
+                if (sn == null) continue;//shouldn't happen
+
+                var pdict = new Dictionary<MetaHash, (string, string)>();//gen9hash:(gen9str:legacystr)
+                var pnodes = sn.SelectNodes("Parameters/Item");
+                foreach (XmlNode p in pnodes)
+                {
+                    var old = Xml.GetStringAttribute(p, "name");
+                    var gen9 = Xml.GetStringAttribute(p, "gen9");
+                    var phash = new MetaHash(JenkHash.GenHash(gen9?.ToLowerInvariant()));
+                    pdict[phash] = (gen9, old);
+                }
+
+                MetaXml.OpenTag(sb, 1, "Item");
+                MetaXml.StringTag(sb, 2, "Name", name);
+                MetaXml.StringTag(sb, 2, "FileName", Xml.GetChildInnerText(sn, "FileName"));
+                MetaXml.StringTag(sb, 2, "BufferSizes", string.Join(" ", cd.BufferSizes));
+                MetaXml.OpenTag(sb, 2, "Parameters");
+                foreach (var p in cd.ParamInfos)
+                {
+                    var istr = $"Item type=\"{p.Type}\"";
+                    if (pdict.TryGetValue(p.Name, out var pdv))
+                    {
+                        istr += $" name=\"{pdv.Item1}\" old=\"{pdv.Item2}\"";
+                    }
+                    else
+                    {
+                        istr += $" name=\"{MetaXml.HashString(p.Name)}\"";
+                    }
+                    switch (p.Type)
+                    {
+                        case ShaderParamTypeG9.Texture: istr += $" index=\"{p.TextureIndex}\""; break;
+                        case ShaderParamTypeG9.Unknown: istr += $" index=\"{p.SamplerIndex}\""; break;
+                        case ShaderParamTypeG9.Sampler: istr += $" index=\"{p.SamplerIndex}\" sampler=\"{cd.SamplerValues[p.SamplerIndex]}\""; break;
+                        case ShaderParamTypeG9.CBuffer: istr += $" buffer=\"{p.CBufferIndex}\" length=\"{p.ParamLength}\" offset=\"{p.ParamOffset}\""; break;
+                    }
+                    MetaXml.SelfClosingTag(sb, 3, istr);
+                }
+                MetaXml.CloseTag(sb, 2, "Parameters");
+                MetaXml.CloseTag(sb, 1, "Item");
+            }
+            MetaXml.CloseTag(sb, 0, "ShadersGen9Conversion");
+            var xml = sb.ToString();
+
+            File.WriteAllText("C:\\ShadersGen9Conversion.xml", xml);
+
+        }
         public void GetArchetypeTimesList()
         {
 
@@ -5503,7 +5800,6 @@ namespace CodeWalker.GameFiles
                                 {
                                     throw new Exception("ytyp file was not in meta format.");
                                 }
-
 
                                 foreach (var arch in ytyp.AllArchetypes)
                                 {
@@ -7464,6 +7760,108 @@ namespace CodeWalker.GameFiles
             }
         }
 
+        public static Dictionary<MetaHash, ShaderGen9XmlDataCollection> ShadersGen9ConversionData;
+        public static void EnsureShadersGen9ConversionData()
+        {
+            if (ShadersGen9ConversionData != null) return;
+
+            var path = System.Reflection.Assembly.GetExecutingAssembly().Location;
+            var dir = Path.GetDirectoryName(path);
+            var fpath = Path.Combine(dir, "ShadersGen9Conversion.xml");
+            if (File.Exists(fpath) == false) throw new Exception("Unable to load ShadersGen9Conversion.xml");//where's the XML file huh?
+            var gen9xml = File.ReadAllText(fpath);
+            var xdoc = new XmlDocument();
+            xdoc.LoadXml(gen9xml);
+            var shaders = xdoc.SelectNodes("ShadersGen9Conversion/Item");
+            var dict = new Dictionary<MetaHash, ShaderGen9XmlDataCollection>();
+            var infos = new List<ShaderParamInfoG9>();
+            var svdict = new Dictionary<byte, byte>();
+            foreach (XmlNode shader in shaders)
+            {
+                infos.Clear();
+                svdict.Clear();
+
+                var name = Xml.GetChildInnerText(shader, "Name")?.ToLowerInvariant();
+                var hash = new MetaHash(JenkHash.GenHash(name));
+                var dc = new ShaderGen9XmlDataCollection();
+                dc.Name = hash;
+                dc.BufferSizes = Xml.GetChildRawIntArray(shader, "BufferSizes");
+                dc.ParamsMapLegacyToGen9 = new Dictionary<MetaHash, MetaHash>();
+                dc.ParamsMapGen9ToLegacy = new Dictionary<MetaHash, MetaHash>();
+
+                var pnodes = shader.SelectNodes("Parameters/Item");
+                foreach (XmlNode p in pnodes)
+                {
+                    var ptype = Xml.GetStringAttribute(p, "type");
+                    var pname = Xml.GetStringAttribute(p, "name")?.ToLowerInvariant();
+                    var pnameold = Xml.GetStringAttribute(p, "old")?.ToLowerInvariant();
+                    var phash = JenkHash.GenHash(pname);
+                    var phashold = JenkHash.GenHash(pnameold);
+                    if (phash != 0)
+                    {
+                        if (pname.StartsWith("hash_"))
+                        {
+                            phash = (MetaHash)Convert.ToUInt32(pname.Substring(5), 16);
+                        }
+                        else
+                        {
+                            JenkIndex.Ensure(pname);
+                        }
+                    }
+                    Enum.TryParse<ShaderParamTypeG9>(ptype, out var pt);
+                    var ps = new ShaderParamInfoG9();
+                    ps.Name = phash;
+                    ps.Type = pt;
+                    switch (pt)
+                    {
+                        case ShaderParamTypeG9.Texture: 
+                            ps.TextureIndex = (byte)Xml.GetIntAttribute(p, "index"); 
+                            break;
+                        case ShaderParamTypeG9.Unknown: 
+                            ps.SamplerIndex = (byte)Xml.GetIntAttribute(p, "index"); 
+                            break;
+                        case ShaderParamTypeG9.Sampler: 
+                            ps.SamplerIndex = (byte)Xml.GetIntAttribute(p, "index"); 
+                            svdict[ps.SamplerIndex] = (byte)Xml.GetIntAttribute(p, "sampler"); 
+                            break;
+                        case ShaderParamTypeG9.CBuffer: 
+                            ps.CBufferIndex = (byte)Xml.GetIntAttribute(p, "buffer"); 
+                            ps.ParamLength = (ushort)Xml.GetUIntAttribute(p, "length"); 
+                            ps.ParamOffset = (ushort)Xml.GetUIntAttribute(p, "offset");
+                            break;
+                    }
+                    infos.Add(ps);
+
+                    if ((phash != 0) && (phashold != 0))
+                    {
+                        dc.ParamsMapLegacyToGen9[phashold] = phash;
+                        dc.ParamsMapGen9ToLegacy[phash] = phashold;
+                    }
+
+                }
+                dc.ParamInfos = infos.ToArray();
+
+                var scnt = 0;
+                foreach (var kvp in svdict) if (kvp.Key >= scnt) scnt = kvp.Key + 1;
+                var svals = new byte[scnt];
+                foreach (var kvp in svdict) svals[kvp.Key] = kvp.Value;
+                dc.SamplerValues = svals;
+
+                dict[hash] = dc;
+            }
+
+            ShadersGen9ConversionData = dict;
+
+        }
+        public class ShaderGen9XmlDataCollection
+        {
+            public MetaHash Name;
+            public int[] BufferSizes;
+            public byte[] SamplerValues;
+            public ShaderParamInfoG9[] ParamInfos;
+            public Dictionary<MetaHash, MetaHash> ParamsMapGen9ToLegacy;
+            public Dictionary<MetaHash, MetaHash> ParamsMapLegacyToGen9;
+        }
         private class ShaderXmlDataCollection
         {
             public MetaHash Name { get; set; }

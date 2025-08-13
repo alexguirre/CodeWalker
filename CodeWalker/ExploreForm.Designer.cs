@@ -32,8 +32,10 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ExploreForm));
             this.MainMenu = new System.Windows.Forms.MenuStrip();
             this.FileMenu = new System.Windows.Forms.ToolStripMenuItem();
-            this.FileOpenFolderMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.FileConfigureGameMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator7 = new System.Windows.Forms.ToolStripSeparator();
+            this.FileOpenFolderMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator14 = new System.Windows.Forms.ToolStripSeparator();
             this.FileExitMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.EditMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.EditViewMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -73,6 +75,7 @@
             this.ToolsRpfBrowserMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsJenkGenMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsJenkIndMenu = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolsAssetConverterMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.OptionsMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.OptionsStartInEditModeMenu = new System.Windows.Forms.ToolStripMenuItem();
             this.OptionsStartInFolderMenu = new System.Windows.Forms.ToolStripMenuItem();
@@ -94,7 +97,7 @@
             this.EditModeButton = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.SearchTextBox = new System.Windows.Forms.ToolStripTextBox();
-            this.SearchButton = new System.Windows.Forms.ToolStripSplitButton();
+            this.SearchButton = new CodeWalker.WinForms.ToolStripSplitButtonFix();
             this.SearchGlobalButton = new System.Windows.Forms.ToolStripMenuItem();
             this.SearchFilterButton = new System.Windows.Forms.ToolStripMenuItem();
             this.MainStatusBar = new System.Windows.Forms.StatusStrip();
@@ -109,6 +112,7 @@
             this.MainAttrColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.MainPathColumnHeader = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.EditModeBaseWarningPanel = new System.Windows.Forms.Panel();
+            this.CopyToModsFolderButton = new System.Windows.Forms.Button();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.label1 = new System.Windows.Forms.Label();
             this.EditModeModsWarningPanel = new System.Windows.Forms.Panel();
@@ -190,30 +194,44 @@
             // FileMenu
             // 
             this.FileMenu.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.FileOpenFolderMenu,
+            this.FileConfigureGameMenu,
             this.toolStripSeparator7,
+            this.FileOpenFolderMenu,
+            this.toolStripSeparator14,
             this.FileExitMenu});
             this.FileMenu.Name = "FileMenu";
             this.FileMenu.Size = new System.Drawing.Size(37, 20);
             this.FileMenu.Text = "File";
             // 
-            // FileOpenFolderMenu
+            // FileConfigureGameMenu
             // 
-            this.FileOpenFolderMenu.Name = "FileOpenFolderMenu";
-            this.FileOpenFolderMenu.Size = new System.Drawing.Size(148, 22);
-            this.FileOpenFolderMenu.Text = "Open Folder...";
-            this.FileOpenFolderMenu.Click += new System.EventHandler(this.FileOpenFolderMenu_Click);
+            this.FileConfigureGameMenu.Name = "FileConfigureGameMenu";
+            this.FileConfigureGameMenu.Size = new System.Drawing.Size(170, 22);
+            this.FileConfigureGameMenu.Text = "Configure Game...";
+            this.FileConfigureGameMenu.Click += new System.EventHandler(this.FileConfigureGameMenu_Click);
             // 
             // toolStripSeparator7
             // 
             this.toolStripSeparator7.Name = "toolStripSeparator7";
-            this.toolStripSeparator7.Size = new System.Drawing.Size(145, 6);
+            this.toolStripSeparator7.Size = new System.Drawing.Size(167, 6);
+            // 
+            // FileOpenFolderMenu
+            // 
+            this.FileOpenFolderMenu.Name = "FileOpenFolderMenu";
+            this.FileOpenFolderMenu.Size = new System.Drawing.Size(170, 22);
+            this.FileOpenFolderMenu.Text = "Open Folder...";
+            this.FileOpenFolderMenu.Click += new System.EventHandler(this.FileOpenFolderMenu_Click);
+            // 
+            // toolStripSeparator14
+            // 
+            this.toolStripSeparator14.Name = "toolStripSeparator14";
+            this.toolStripSeparator14.Size = new System.Drawing.Size(167, 6);
             // 
             // FileExitMenu
             // 
             this.FileExitMenu.Name = "FileExitMenu";
             this.FileExitMenu.ShortcutKeyDisplayString = "Alt+F4";
-            this.FileExitMenu.Size = new System.Drawing.Size(148, 22);
+            this.FileExitMenu.Size = new System.Drawing.Size(170, 22);
             this.FileExitMenu.Text = "Exit";
             this.FileExitMenu.Click += new System.EventHandler(this.FileExitMenu_Click);
             // 
@@ -498,7 +516,8 @@
             this.ToolsAudioExplorerMenu,
             this.ToolsRpfBrowserMenu,
             this.ToolsJenkGenMenu,
-            this.ToolsJenkIndMenu});
+            this.ToolsJenkIndMenu,
+            this.ToolsAssetConverterMenu});
             this.ToolsMenu.Name = "ToolsMenu";
             this.ToolsMenu.Size = new System.Drawing.Size(46, 20);
             this.ToolsMenu.Text = "Tools";
@@ -506,37 +525,44 @@
             // ToolsBinSearchMenu
             // 
             this.ToolsBinSearchMenu.Name = "ToolsBinSearchMenu";
-            this.ToolsBinSearchMenu.Size = new System.Drawing.Size(180, 22);
+            this.ToolsBinSearchMenu.Size = new System.Drawing.Size(161, 22);
             this.ToolsBinSearchMenu.Text = "Binary Search...";
             this.ToolsBinSearchMenu.Click += new System.EventHandler(this.ToolsBinSearchMenu_Click);
             // 
             // ToolsAudioExplorerMenu
             // 
             this.ToolsAudioExplorerMenu.Name = "ToolsAudioExplorerMenu";
-            this.ToolsAudioExplorerMenu.Size = new System.Drawing.Size(180, 22);
+            this.ToolsAudioExplorerMenu.Size = new System.Drawing.Size(161, 22);
             this.ToolsAudioExplorerMenu.Text = "Audio Explorer";
             this.ToolsAudioExplorerMenu.Click += new System.EventHandler(this.ToolsAudioExplorerMenu_Click);
             // 
             // ToolsRpfBrowserMenu
             // 
             this.ToolsRpfBrowserMenu.Name = "ToolsRpfBrowserMenu";
-            this.ToolsRpfBrowserMenu.Size = new System.Drawing.Size(180, 22);
+            this.ToolsRpfBrowserMenu.Size = new System.Drawing.Size(161, 22);
             this.ToolsRpfBrowserMenu.Text = "Old RPF Browser";
             this.ToolsRpfBrowserMenu.Click += new System.EventHandler(this.ToolsRpfBrowserMenu_Click);
             // 
             // ToolsJenkGenMenu
             // 
             this.ToolsJenkGenMenu.Name = "ToolsJenkGenMenu";
-            this.ToolsJenkGenMenu.Size = new System.Drawing.Size(180, 22);
+            this.ToolsJenkGenMenu.Size = new System.Drawing.Size(161, 22);
             this.ToolsJenkGenMenu.Text = "JenkGen";
             this.ToolsJenkGenMenu.Click += new System.EventHandler(this.ToolsJenkGenMenu_Click);
             // 
             // ToolsJenkIndMenu
             // 
             this.ToolsJenkIndMenu.Name = "ToolsJenkIndMenu";
-            this.ToolsJenkIndMenu.Size = new System.Drawing.Size(180, 22);
+            this.ToolsJenkIndMenu.Size = new System.Drawing.Size(161, 22);
             this.ToolsJenkIndMenu.Text = "JenkInd";
             this.ToolsJenkIndMenu.Click += new System.EventHandler(this.ToolsJenkIndMenu_Click);
+            // 
+            // ToolsAssetConverterMenu
+            // 
+            this.ToolsAssetConverterMenu.Name = "ToolsAssetConverterMenu";
+            this.ToolsAssetConverterMenu.Size = new System.Drawing.Size(161, 22);
+            this.ToolsAssetConverterMenu.Text = "Asset Converter";
+            this.ToolsAssetConverterMenu.Click += new System.EventHandler(this.ToolsAssetConverterMenu_Click);
             // 
             // OptionsMenu
             // 
@@ -730,6 +756,7 @@
             this.SearchTextBox.Size = new System.Drawing.Size(140, 25);
             this.SearchTextBox.Enter += new System.EventHandler(this.SearchTextBox_Enter);
             this.SearchTextBox.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.SearchTextBox_KeyPress);
+            this.SearchTextBox.TextChanged += new System.EventHandler(this.SearchTextBox_TextChanged);
             // 
             // SearchButton
             // 
@@ -882,6 +909,7 @@
             this.MainListView.ItemActivate += new System.EventHandler(this.MainListView_ItemActivate);
             this.MainListView.ItemDrag += new System.Windows.Forms.ItemDragEventHandler(this.MainListView_ItemDrag);
             this.MainListView.RetrieveVirtualItem += new System.Windows.Forms.RetrieveVirtualItemEventHandler(this.MainListView_RetrieveVirtualItem);
+            this.MainListView.SearchForVirtualItem += new System.Windows.Forms.SearchForVirtualItemEventHandler(this.MainListView_SearchForVirtualItem);
             this.MainListView.DragDrop += new System.Windows.Forms.DragEventHandler(this.MainListView_DragDrop);
             this.MainListView.DragEnter += new System.Windows.Forms.DragEventHandler(this.MainListView_DragEnter);
             this.MainListView.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MainListView_KeyDown);
@@ -919,12 +947,24 @@
             this.EditModeBaseWarningPanel.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.EditModeBaseWarningPanel.BackColor = System.Drawing.Color.DarkRed;
+            this.EditModeBaseWarningPanel.Controls.Add(this.CopyToModsFolderButton);
             this.EditModeBaseWarningPanel.Controls.Add(this.pictureBox1);
             this.EditModeBaseWarningPanel.Controls.Add(this.label1);
             this.EditModeBaseWarningPanel.Location = new System.Drawing.Point(1, 3);
             this.EditModeBaseWarningPanel.Name = "EditModeBaseWarningPanel";
             this.EditModeBaseWarningPanel.Size = new System.Drawing.Size(559, 24);
             this.EditModeBaseWarningPanel.TabIndex = 1;
+            // 
+            // CopyToModsFolderButton
+            // 
+            this.CopyToModsFolderButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.CopyToModsFolderButton.Location = new System.Drawing.Point(420, 1);
+            this.CopyToModsFolderButton.Name = "CopyToModsFolderButton";
+            this.CopyToModsFolderButton.Size = new System.Drawing.Size(110, 22);
+            this.CopyToModsFolderButton.TabIndex = 2;
+            this.CopyToModsFolderButton.Text = "Copy to mods folder";
+            this.CopyToModsFolderButton.UseVisualStyleBackColor = true;
+            this.CopyToModsFolderButton.Click += new System.EventHandler(this.CopyToModsFolderButton_Click);
             // 
             // pictureBox1
             // 
@@ -1375,7 +1415,7 @@
         private System.Windows.Forms.ToolStripMenuItem ForwardListButton;
         private System.Windows.Forms.ToolStripMenuItem UpListButton;
         private System.Windows.Forms.ToolStripButton GoButton;
-        private System.Windows.Forms.ToolStripSplitButton SearchButton;
+        private WinForms.ToolStripSplitButtonFix SearchButton;
         private System.Windows.Forms.ToolStripMenuItem SearchGlobalButton;
         private System.Windows.Forms.ToolStripMenuItem SearchFilterButton;
         private System.Windows.Forms.ToolStripMenuItem ListContextViewMenu;
@@ -1476,5 +1516,9 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator13;
         private System.Windows.Forms.ToolStripMenuItem ListContextNewYtdFileMenu;
         private System.Windows.Forms.ToolStripMenuItem ToolsAudioExplorerMenu;
+        private System.Windows.Forms.ToolStripMenuItem FileConfigureGameMenu;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator14;
+        private System.Windows.Forms.ToolStripMenuItem ToolsAssetConverterMenu;
+        private System.Windows.Forms.Button CopyToModsFolderButton;
     }
 }

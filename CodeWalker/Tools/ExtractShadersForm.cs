@@ -31,7 +31,7 @@ namespace CodeWalker.Tools
 
             try
             {
-                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, Settings.Default.Key);
+                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, GTAFolder.IsGen9, Settings.Default.Key);
                 KeysLoaded = true;
                 UpdateExtractStatus("Ready to extract.");
             }
@@ -97,6 +97,7 @@ namespace CodeWalker.Tools
             string searchpath = FolderTextBox.Text;
             string outputpath = OutputFolderTextBox.Text;
             string replpath = searchpath + "\\";
+            bool gen9 = GTAFolder.IsGen9Folder(searchpath);
 
             bool cso = CsoCheckBox.Checked;
             bool asm = AsmCheckBox.Checked;
@@ -110,7 +111,7 @@ namespace CodeWalker.Tools
 
 
                 RpfManager rpfman = new RpfManager();
-                rpfman.Init(searchpath, UpdateExtractStatus, UpdateExtractStatus);
+                rpfman.Init(searchpath, gen9, UpdateExtractStatus, UpdateExtractStatus);
 
 
                 UpdateExtractStatus("Beginning shader extraction...");

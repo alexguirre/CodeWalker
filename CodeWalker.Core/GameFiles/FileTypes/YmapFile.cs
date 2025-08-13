@@ -259,14 +259,13 @@ namespace CodeWalker.GameFiles
 
         private void EnsureEntities(Meta Meta)
         {
-            //CMloInstanceDefs = MetaTypes.ConvertDataArray<CMloInstanceDef>(Meta, MetaName.CMloInstanceDef, CMapData.entities);
-            CMloInstanceDefs = MetaTypes.GetTypedDataArray<CMloInstanceDef>(Meta, MetaName.CMloInstanceDef);
+            var eptrs = MetaTypes.GetPointerArray(Meta, _CMapData.entities);
+
+            CMloInstanceDefs = MetaTypes.GetTypedPointerArray<CMloInstanceDef>(Meta, MetaName.CMloInstanceDef, eptrs);
             if (CMloInstanceDefs != null)
             { }
 
-            var eptrs = MetaTypes.GetPointerArray(Meta, _CMapData.entities);
-            //CEntityDefs = MetaTypes.ConvertDataArray<CEntityDef>(Meta, MetaName.CEntityDef, CMapData.entities);
-            CEntityDefs = MetaTypes.GetTypedDataArray<CEntityDef>(Meta, MetaName.CEntityDef);
+            CEntityDefs = MetaTypes.GetTypedPointerArray<CEntityDef>(Meta, MetaName.CEntityDef, eptrs);
             if (CEntityDefs != null)
             { }
 
@@ -299,7 +298,7 @@ namespace CodeWalker.GameFiles
                     for (int i = 0; i < CMloInstanceDefs.Length; i++)
                     {
                         YmapEntityDef d = new YmapEntityDef(this, i, ref CMloInstanceDefs[i]);
-                        uint[] defentsets = MetaTypes.GetUintArray(Meta, CMloInstanceDefs[i].defaultEntitySets);
+                        MetaHash[] defentsets = MetaTypes.GetHashArray(Meta, CMloInstanceDefs[i].defaultEntitySets);
                         if (d.MloInstance != null)
                         {
                             d.MloInstance.defaultEntitySets = defentsets;
@@ -658,7 +657,7 @@ namespace CodeWalker.GameFiles
                         ent.MloInstance.UpdateDefaultEntitySets();
 
                         ent.MloInstance._Instance.CEntityDef = ent.CEntityDef; //overwrite with all the updated values..
-                        ent.MloInstance._Instance.defaultEntitySets = mb.AddUintArrayPtr(ent.MloInstance.defaultEntitySets);
+                        ent.MloInstance._Instance.defaultEntitySets = mb.AddHashArrayPtr(ent.MloInstance.defaultEntitySets);
 
                         ptrs[i] = mb.AddItemPtr(MetaName.CMloInstanceDef, ent.MloInstance.Instance);
                     }
@@ -1777,6 +1776,31 @@ namespace CodeWalker.GameFiles
             UpdateEntityHash();
         }
 
+        public YmapEntityDef(YmapEntityDef mloParent, MCEntityDef ent, int index)
+        {
+            Ymap = null;
+            Index = index;
+            CEntityDef = ent._Data;
+            Scale = new Vector3(new Vector2(_CEntityDef.scaleXY), _CEntityDef.scaleZ);
+            MloRefPosition = _CEntityDef.position;
+            MloRefOrientation = new Quaternion(_CEntityDef.rotation);
+            if (MloRefOrientation != Quaternion.Identity)
+            {
+                MloRefOrientation = Quaternion.Invert(MloRefOrientation);
+            }
+            IsMlo = false;
+
+            Extensions = ent.Extensions;
+            MloParent = mloParent;
+            Position = mloParent.Position + mloParent.Orientation.Multiply(MloRefPosition);
+            Orientation = Quaternion.Multiply(mloParent.Orientation, MloRefOrientation);
+            
+            UpdateWidgetPosition();
+            UpdateWidgetOrientation();
+            UpdateEntityHash();
+        }
+
+
 
         public void SetArchetype(Archetype arch)
         {
@@ -1789,8 +1813,13 @@ namespace CodeWalker.GameFiles
                 {
                     //transform interior entities into world space...
                     var mloa = Archetype as MloArchetype;
+                    var mloi = MloInstance;
                     MloInstance = new MloInstanceData(this, mloa);
-                    MloInstance._Instance = new CMloInstanceDef { CEntityDef = _CEntityDef };
+                    if (mloi != null)
+                    {
+                        MloInstance.Instance = mloi.Instance;
+                        MloInstance.defaultEntitySets = mloi.defaultEntitySets;
+                    }
                     if (mloa != null)
                     {
                         if (!IsMlo)
@@ -1849,6 +1878,36 @@ namespace CodeWalker.GameFiles
                 UpdateBB();
             }
 
+
+            if (MloInstance != null)
+            {
+                MloInstance.SetPosition(Position);
+                MloInstance.UpdateEntities();
+            }
+
+            UpdateEntityHash();
+            UpdateWidgetPosition();
+        }
+
+        public void SetPositionRaw(Vector3 pos)
+        {
+            //set the raw position value in the CEntityDef, and update everything from that.
+            //used by the EditYmapEntityPanel
+
+            _CEntityDef.position = pos;
+
+            if (MloParent != null)
+            {
+                MloRefPosition = pos;
+                Position = MloParent.Position + MloParent.Orientation.Multiply(MloRefPosition);
+                UpdateBB();
+                UpdateMloArchetype();
+            }
+            else
+            {
+                Position = pos;
+                UpdateBB();
+            }
 
             if (MloInstance != null)
             {
@@ -1938,6 +1997,45 @@ namespace CodeWalker.GameFiles
             if (MloInstance != null)
             {
                 MloInstance.SetOrientation(ori);
+                MloInstance.UpdateEntities();
+            }
+
+            UpdateBB();
+            UpdateWidgetPosition();
+            UpdateWidgetOrientation();
+        }
+
+        public void SetOrientationRaw(Quaternion ori)
+        {
+            //set the raw rotation value in the CEntityDef, and update everything from that.
+            //used by the EditYmapEntityPanel
+
+            _CEntityDef.rotation = ori.ToVector4();
+
+            if (MloParent != null)
+            {
+                MloRefOrientation = ori;
+                if (MloRefOrientation != Quaternion.Identity)
+                {
+                    MloRefOrientation = Quaternion.Invert(MloRefOrientation);
+                }
+                Orientation = Quaternion.Multiply(MloParent.Orientation, MloRefOrientation);
+            }
+            else
+            {
+                Orientation = ori;
+                if (MloInstance == null)//CMloInstanceDef quaternions aren't inverted, but CEntityDef ones are
+                {
+                    if (Orientation != Quaternion.Identity)
+                    {
+                        Orientation = Quaternion.Invert(Orientation);
+                    }
+                }
+            }
+
+            if (MloInstance != null)
+            {
+                MloInstance.SetOrientation(Orientation);
                 MloInstance.UpdateEntities();
             }
 

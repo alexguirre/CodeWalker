@@ -44,6 +44,7 @@ namespace CodeWalker
             this.ToolsPanelExpandButton = new System.Windows.Forms.Button();
             this.ToolsTabControl = new System.Windows.Forms.TabControl();
             this.ViewTabPage = new System.Windows.Forms.TabPage();
+            this.StatusBarCheckBox = new System.Windows.Forms.CheckBox();
             this.ViewTabControl = new System.Windows.Forms.TabControl();
             this.ViewWorldTabPage = new System.Windows.Forms.TabPage();
             this.EnableModsCheckBox = new System.Windows.Forms.CheckBox();
@@ -72,6 +73,7 @@ namespace CodeWalker
             this.label3 = new System.Windows.Forms.Label();
             this.ViewModeComboBox = new System.Windows.Forms.ComboBox();
             this.ShowToolbarCheckBox = new System.Windows.Forms.CheckBox();
+            this.ErrorConsoleCheckBox = new System.Windows.Forms.CheckBox();
             this.MarkersTabPage = new System.Windows.Forms.TabPage();
             this.label27 = new System.Windows.Forms.Label();
             this.CameraPositionTextBox = new System.Windows.Forms.TextBox();
@@ -109,9 +111,13 @@ namespace CodeWalker
             this.OptionsTabPage = new System.Windows.Forms.TabPage();
             this.OptionsTabControl = new System.Windows.Forms.TabControl();
             this.OptionsGeneralTabPage = new System.Windows.Forms.TabPage();
+            this.SaveTimeOfDayCheckBox = new System.Windows.Forms.CheckBox();
+            this.SavePositionCheckBox = new System.Windows.Forms.CheckBox();
+            this.ResetSettingsButton = new System.Windows.Forms.Button();
             this.CarGeneratorsCheckBox = new System.Windows.Forms.CheckBox();
             this.RenderEntitiesCheckBox = new System.Windows.Forms.CheckBox();
             this.AdvancedSettingsButton = new System.Windows.Forms.Button();
+            this.SaveSettingsButton = new System.Windows.Forms.Button();
             this.ControlSettingsButton = new System.Windows.Forms.Button();
             this.MapViewDetailLabel = new System.Windows.Forms.Label();
             this.label28 = new System.Windows.Forms.Label();
@@ -203,12 +209,6 @@ namespace CodeWalker
             this.ControlLightDirectionCheckBox = new System.Windows.Forms.CheckBox();
             this.SkydomeCheckBox = new System.Windows.Forms.CheckBox();
             this.ShadowsCheckBox = new System.Windows.Forms.CheckBox();
-            this.StatusBarCheckBox = new System.Windows.Forms.CheckBox();
-            this.QuitButton = new System.Windows.Forms.Button();
-            this.ReloadSettingsButton = new System.Windows.Forms.Button();
-            this.SaveSettingsButton = new System.Windows.Forms.Button();
-            this.ReloadShadersButton = new System.Windows.Forms.Button();
-            this.ErrorConsoleCheckBox = new System.Windows.Forms.CheckBox();
             this.ToolsPanelHideButton = new System.Windows.Forms.Button();
             this.ToolsPanelShowButton = new System.Windows.Forms.Button();
             this.ConsolePanel = new System.Windows.Forms.Panel();
@@ -218,11 +218,13 @@ namespace CodeWalker
             this.SelectedMarkerPositionTextBox = new System.Windows.Forms.TextBox();
             this.SelectedMarkerNameTextBox = new System.Windows.Forms.TextBox();
             this.ToolsMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.ToolsMenuConfigureGame = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuRPFBrowser = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuRPFExplorer = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuSelectionInfo = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuProjectWindow = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuCutsceneViewer = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolsMenuAudioExplorer = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuWorldSearch = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuBinarySearch = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuJenkGen = new System.Windows.Forms.ToolStripMenuItem();
@@ -232,6 +234,7 @@ namespace CodeWalker
             this.ToolsMenuExtractRawFiles = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuExtractShaders = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolsMenuOptions = new System.Windows.Forms.ToolStripMenuItem();
+            this.ToolbarPanel = new System.Windows.Forms.Panel();
             this.Toolbar = new CodeWalker.WinForms.ToolStripFix();
             this.ToolbarNewButton = new System.Windows.Forms.ToolStripSplitButton();
             this.ToolbarNewProjectButton = new System.Windows.Forms.ToolStripMenuItem();
@@ -307,10 +310,8 @@ namespace CodeWalker
             this.ToolbarCameraPerspectiveButton = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolbarCameraMapViewButton = new System.Windows.Forms.ToolStripMenuItem();
             this.ToolbarCameraOrthographicButton = new System.Windows.Forms.ToolStripMenuItem();
-            this.ToolbarPanel = new System.Windows.Forms.Panel();
             this.SubtitleLabel = new System.Windows.Forms.Label();
             this.SubtitleTimer = new System.Windows.Forms.Timer(this.components);
-            this.ToolsMenuAudioExplorer = new System.Windows.Forms.ToolStripMenuItem();
             this.StatusStrip.SuspendLayout();
             this.ToolsPanel.SuspendLayout();
             this.ToolsTabControl.SuspendLayout();
@@ -353,8 +354,8 @@ namespace CodeWalker
             this.ConsolePanel.SuspendLayout();
             this.SelectedMarkerPanel.SuspendLayout();
             this.ToolsMenu.SuspendLayout();
-            this.Toolbar.SuspendLayout();
             this.ToolbarPanel.SuspendLayout();
+            this.Toolbar.SuspendLayout();
             this.SuspendLayout();
             // 
             // StatusStrip
@@ -520,10 +521,12 @@ namespace CodeWalker
             // 
             // ViewTabPage
             // 
+            this.ViewTabPage.Controls.Add(this.StatusBarCheckBox);
             this.ViewTabPage.Controls.Add(this.ViewTabControl);
             this.ViewTabPage.Controls.Add(this.label3);
             this.ViewTabPage.Controls.Add(this.ViewModeComboBox);
             this.ViewTabPage.Controls.Add(this.ShowToolbarCheckBox);
+            this.ViewTabPage.Controls.Add(this.ErrorConsoleCheckBox);
             this.ViewTabPage.Location = new System.Drawing.Point(4, 22);
             this.ViewTabPage.Name = "ViewTabPage";
             this.ViewTabPage.Padding = new System.Windows.Forms.Padding(3);
@@ -531,6 +534,20 @@ namespace CodeWalker
             this.ViewTabPage.TabIndex = 0;
             this.ViewTabPage.Text = "View";
             this.ViewTabPage.UseVisualStyleBackColor = true;
+            // 
+            // StatusBarCheckBox
+            // 
+            this.StatusBarCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.StatusBarCheckBox.AutoSize = true;
+            this.StatusBarCheckBox.Checked = true;
+            this.StatusBarCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.StatusBarCheckBox.Location = new System.Drawing.Point(10, 544);
+            this.StatusBarCheckBox.Name = "StatusBarCheckBox";
+            this.StatusBarCheckBox.Size = new System.Drawing.Size(74, 17);
+            this.StatusBarCheckBox.TabIndex = 45;
+            this.StatusBarCheckBox.Text = "Status bar";
+            this.StatusBarCheckBox.UseVisualStyleBackColor = true;
+            this.StatusBarCheckBox.CheckedChanged += new System.EventHandler(this.StatusBarCheckBox_CheckedChanged);
             // 
             // ViewTabControl
             // 
@@ -543,7 +560,7 @@ namespace CodeWalker
             this.ViewTabControl.Location = new System.Drawing.Point(0, 32);
             this.ViewTabControl.Name = "ViewTabControl";
             this.ViewTabControl.SelectedIndex = 0;
-            this.ViewTabControl.Size = new System.Drawing.Size(202, 548);
+            this.ViewTabControl.Size = new System.Drawing.Size(202, 506);
             this.ViewTabControl.TabIndex = 12;
             // 
             // ViewWorldTabPage
@@ -566,7 +583,7 @@ namespace CodeWalker
             this.ViewWorldTabPage.Location = new System.Drawing.Point(4, 22);
             this.ViewWorldTabPage.Name = "ViewWorldTabPage";
             this.ViewWorldTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.ViewWorldTabPage.Size = new System.Drawing.Size(194, 522);
+            this.ViewWorldTabPage.Size = new System.Drawing.Size(194, 480);
             this.ViewWorldTabPage.TabIndex = 0;
             this.ViewWorldTabPage.Text = "World";
             this.ViewWorldTabPage.UseVisualStyleBackColor = true;
@@ -764,7 +781,7 @@ namespace CodeWalker
             this.ViewYmapsTabPage.Location = new System.Drawing.Point(4, 22);
             this.ViewYmapsTabPage.Name = "ViewYmapsTabPage";
             this.ViewYmapsTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.ViewYmapsTabPage.Size = new System.Drawing.Size(194, 522);
+            this.ViewYmapsTabPage.Size = new System.Drawing.Size(194, 480);
             this.ViewYmapsTabPage.TabIndex = 1;
             this.ViewYmapsTabPage.Text = "Ymaps";
             this.ViewYmapsTabPage.UseVisualStyleBackColor = true;
@@ -773,7 +790,7 @@ namespace CodeWalker
             // 
             this.ShowYmapChildrenCheckBox.AutoSize = true;
             this.ShowYmapChildrenCheckBox.Enabled = false;
-            this.ShowYmapChildrenCheckBox.Location = new System.Drawing.Point(6, 59);
+            this.ShowYmapChildrenCheckBox.Location = new System.Drawing.Point(101, 6);
             this.ShowYmapChildrenCheckBox.Name = "ShowYmapChildrenCheckBox";
             this.ShowYmapChildrenCheckBox.Size = new System.Drawing.Size(93, 17);
             this.ShowYmapChildrenCheckBox.TabIndex = 35;
@@ -784,7 +801,7 @@ namespace CodeWalker
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(3, 88);
+            this.label2.Location = new System.Drawing.Point(3, 56);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(77, 13);
             this.label2.TabIndex = 8;
@@ -808,7 +825,7 @@ namespace CodeWalker
             this.DynamicLODCheckBox.AutoSize = true;
             this.DynamicLODCheckBox.Checked = true;
             this.DynamicLODCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.DynamicLODCheckBox.Location = new System.Drawing.Point(6, 6);
+            this.DynamicLODCheckBox.Location = new System.Drawing.Point(2, 6);
             this.DynamicLODCheckBox.Name = "DynamicLODCheckBox";
             this.DynamicLODCheckBox.Size = new System.Drawing.Size(92, 17);
             this.DynamicLODCheckBox.TabIndex = 33;
@@ -821,11 +838,11 @@ namespace CodeWalker
             this.YmapsTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.YmapsTextBox.Location = new System.Drawing.Point(0, 104);
+            this.YmapsTextBox.Location = new System.Drawing.Point(0, 72);
             this.YmapsTextBox.Multiline = true;
             this.YmapsTextBox.Name = "YmapsTextBox";
             this.YmapsTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.YmapsTextBox.Size = new System.Drawing.Size(194, 418);
+            this.YmapsTextBox.Size = new System.Drawing.Size(194, 408);
             this.YmapsTextBox.TabIndex = 36;
             this.YmapsTextBox.Text = resources.GetString("YmapsTextBox.Text");
             this.YmapsTextBox.TextChanged += new System.EventHandler(this.YmapsTextBox_TextChanged);
@@ -836,7 +853,7 @@ namespace CodeWalker
             this.ViewModelTabPage.Controls.Add(this.ModelComboBox);
             this.ViewModelTabPage.Location = new System.Drawing.Point(4, 22);
             this.ViewModelTabPage.Name = "ViewModelTabPage";
-            this.ViewModelTabPage.Size = new System.Drawing.Size(194, 522);
+            this.ViewModelTabPage.Size = new System.Drawing.Size(194, 480);
             this.ViewModelTabPage.TabIndex = 2;
             this.ViewModelTabPage.Text = "Model";
             this.ViewModelTabPage.UseVisualStyleBackColor = true;
@@ -886,6 +903,18 @@ namespace CodeWalker
             this.ShowToolbarCheckBox.UseVisualStyleBackColor = true;
             this.ShowToolbarCheckBox.CheckedChanged += new System.EventHandler(this.ShowToolbarCheckBox_CheckedChanged);
             // 
+            // ErrorConsoleCheckBox
+            // 
+            this.ErrorConsoleCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.ErrorConsoleCheckBox.AutoSize = true;
+            this.ErrorConsoleCheckBox.Location = new System.Drawing.Point(10, 565);
+            this.ErrorConsoleCheckBox.Name = "ErrorConsoleCheckBox";
+            this.ErrorConsoleCheckBox.Size = new System.Drawing.Size(88, 17);
+            this.ErrorConsoleCheckBox.TabIndex = 46;
+            this.ErrorConsoleCheckBox.Text = "Error console";
+            this.ErrorConsoleCheckBox.UseVisualStyleBackColor = true;
+            this.ErrorConsoleCheckBox.CheckedChanged += new System.EventHandler(this.ErrorConsoleCheckBox_CheckedChanged);
+            // 
             // MarkersTabPage
             // 
             this.MarkersTabPage.Controls.Add(this.label27);
@@ -931,7 +960,7 @@ namespace CodeWalker
             // AddSelectionMarkerButton
             // 
             this.AddSelectionMarkerButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddSelectionMarkerButton.Location = new System.Drawing.Point(0, 536);
+            this.AddSelectionMarkerButton.Location = new System.Drawing.Point(0, 577);
             this.AddSelectionMarkerButton.Name = "AddSelectionMarkerButton";
             this.AddSelectionMarkerButton.Size = new System.Drawing.Size(97, 23);
             this.AddSelectionMarkerButton.TabIndex = 22;
@@ -942,7 +971,7 @@ namespace CodeWalker
             // AddCurrentPositonMarkerButton
             // 
             this.AddCurrentPositonMarkerButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddCurrentPositonMarkerButton.Location = new System.Drawing.Point(0, 507);
+            this.AddCurrentPositonMarkerButton.Location = new System.Drawing.Point(0, 548);
             this.AddCurrentPositonMarkerButton.Name = "AddCurrentPositonMarkerButton";
             this.AddCurrentPositonMarkerButton.Size = new System.Drawing.Size(97, 23);
             this.AddCurrentPositonMarkerButton.TabIndex = 20;
@@ -953,7 +982,7 @@ namespace CodeWalker
             // ResetMarkersButton
             // 
             this.ResetMarkersButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.ResetMarkersButton.Location = new System.Drawing.Point(108, 507);
+            this.ResetMarkersButton.Location = new System.Drawing.Point(108, 548);
             this.ResetMarkersButton.Name = "ResetMarkersButton";
             this.ResetMarkersButton.Size = new System.Drawing.Size(97, 23);
             this.ResetMarkersButton.TabIndex = 21;
@@ -964,7 +993,7 @@ namespace CodeWalker
             // ClearMarkersButton
             // 
             this.ClearMarkersButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.ClearMarkersButton.Location = new System.Drawing.Point(108, 478);
+            this.ClearMarkersButton.Location = new System.Drawing.Point(108, 519);
             this.ClearMarkersButton.Name = "ClearMarkersButton";
             this.ClearMarkersButton.Size = new System.Drawing.Size(97, 23);
             this.ClearMarkersButton.TabIndex = 19;
@@ -1027,7 +1056,7 @@ namespace CodeWalker
             // AddMarkersButton
             // 
             this.AddMarkersButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.AddMarkersButton.Location = new System.Drawing.Point(0, 478);
+            this.AddMarkersButton.Location = new System.Drawing.Point(0, 519);
             this.AddMarkersButton.Name = "AddMarkersButton";
             this.AddMarkersButton.Size = new System.Drawing.Size(97, 23);
             this.AddMarkersButton.TabIndex = 18;
@@ -1045,7 +1074,7 @@ namespace CodeWalker
             this.MultiFindTextBox.Multiline = true;
             this.MultiFindTextBox.Name = "MultiFindTextBox";
             this.MultiFindTextBox.ScrollBars = System.Windows.Forms.ScrollBars.Both;
-            this.MultiFindTextBox.Size = new System.Drawing.Size(205, 355);
+            this.MultiFindTextBox.Size = new System.Drawing.Size(205, 392);
             this.MultiFindTextBox.TabIndex = 17;
             // 
             // SelectionTabPage
@@ -1314,12 +1343,6 @@ namespace CodeWalker
             // OptionsTabPage
             // 
             this.OptionsTabPage.Controls.Add(this.OptionsTabControl);
-            this.OptionsTabPage.Controls.Add(this.StatusBarCheckBox);
-            this.OptionsTabPage.Controls.Add(this.QuitButton);
-            this.OptionsTabPage.Controls.Add(this.ReloadSettingsButton);
-            this.OptionsTabPage.Controls.Add(this.SaveSettingsButton);
-            this.OptionsTabPage.Controls.Add(this.ReloadShadersButton);
-            this.OptionsTabPage.Controls.Add(this.ErrorConsoleCheckBox);
             this.OptionsTabPage.Location = new System.Drawing.Point(4, 22);
             this.OptionsTabPage.Name = "OptionsTabPage";
             this.OptionsTabPage.Size = new System.Drawing.Size(205, 606);
@@ -1338,14 +1361,18 @@ namespace CodeWalker
             this.OptionsTabControl.Location = new System.Drawing.Point(0, 3);
             this.OptionsTabControl.Name = "OptionsTabControl";
             this.OptionsTabControl.SelectedIndex = 0;
-            this.OptionsTabControl.Size = new System.Drawing.Size(208, 508);
+            this.OptionsTabControl.Size = new System.Drawing.Size(208, 603);
             this.OptionsTabControl.TabIndex = 50;
             // 
             // OptionsGeneralTabPage
             // 
+            this.OptionsGeneralTabPage.Controls.Add(this.SaveTimeOfDayCheckBox);
+            this.OptionsGeneralTabPage.Controls.Add(this.SavePositionCheckBox);
+            this.OptionsGeneralTabPage.Controls.Add(this.ResetSettingsButton);
             this.OptionsGeneralTabPage.Controls.Add(this.CarGeneratorsCheckBox);
             this.OptionsGeneralTabPage.Controls.Add(this.RenderEntitiesCheckBox);
             this.OptionsGeneralTabPage.Controls.Add(this.AdvancedSettingsButton);
+            this.OptionsGeneralTabPage.Controls.Add(this.SaveSettingsButton);
             this.OptionsGeneralTabPage.Controls.Add(this.ControlSettingsButton);
             this.OptionsGeneralTabPage.Controls.Add(this.MapViewDetailLabel);
             this.OptionsGeneralTabPage.Controls.Add(this.label28);
@@ -1372,10 +1399,40 @@ namespace CodeWalker
             this.OptionsGeneralTabPage.Location = new System.Drawing.Point(4, 22);
             this.OptionsGeneralTabPage.Name = "OptionsGeneralTabPage";
             this.OptionsGeneralTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.OptionsGeneralTabPage.Size = new System.Drawing.Size(200, 482);
+            this.OptionsGeneralTabPage.Size = new System.Drawing.Size(200, 577);
             this.OptionsGeneralTabPage.TabIndex = 0;
             this.OptionsGeneralTabPage.Text = "General";
             this.OptionsGeneralTabPage.UseVisualStyleBackColor = true;
+            // 
+            // SaveTimeOfDayCheckBox
+            // 
+            this.SaveTimeOfDayCheckBox.AutoSize = true;
+            this.SaveTimeOfDayCheckBox.Location = new System.Drawing.Point(10, 485);
+            this.SaveTimeOfDayCheckBox.Name = "SaveTimeOfDayCheckBox";
+            this.SaveTimeOfDayCheckBox.Size = new System.Drawing.Size(139, 17);
+            this.SaveTimeOfDayCheckBox.TabIndex = 149;
+            this.SaveTimeOfDayCheckBox.Text = "Save time of day on exit";
+            this.SaveTimeOfDayCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // SavePositionCheckBox
+            // 
+            this.SavePositionCheckBox.AutoSize = true;
+            this.SavePositionCheckBox.Location = new System.Drawing.Point(10, 464);
+            this.SavePositionCheckBox.Name = "SavePositionCheckBox";
+            this.SavePositionCheckBox.Size = new System.Drawing.Size(124, 17);
+            this.SavePositionCheckBox.TabIndex = 148;
+            this.SavePositionCheckBox.Text = "Save position on exit";
+            this.SavePositionCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // ResetSettingsButton
+            // 
+            this.ResetSettingsButton.Location = new System.Drawing.Point(4, 551);
+            this.ResetSettingsButton.Name = "ResetSettingsButton";
+            this.ResetSettingsButton.Size = new System.Drawing.Size(93, 23);
+            this.ResetSettingsButton.TabIndex = 146;
+            this.ResetSettingsButton.Text = "Reset settings";
+            this.ResetSettingsButton.UseVisualStyleBackColor = true;
+            this.ResetSettingsButton.Click += new System.EventHandler(this.ResetSettingsButton_Click);
             // 
             // CarGeneratorsCheckBox
             // 
@@ -1403,7 +1460,7 @@ namespace CodeWalker
             // 
             // AdvancedSettingsButton
             // 
-            this.AdvancedSettingsButton.Location = new System.Drawing.Point(101, 456);
+            this.AdvancedSettingsButton.Location = new System.Drawing.Point(103, 522);
             this.AdvancedSettingsButton.Name = "AdvancedSettingsButton";
             this.AdvancedSettingsButton.Size = new System.Drawing.Size(93, 23);
             this.AdvancedSettingsButton.TabIndex = 46;
@@ -1411,9 +1468,19 @@ namespace CodeWalker
             this.AdvancedSettingsButton.UseVisualStyleBackColor = true;
             this.AdvancedSettingsButton.Click += new System.EventHandler(this.AdvancedSettingsButton_Click);
             // 
+            // SaveSettingsButton
+            // 
+            this.SaveSettingsButton.Location = new System.Drawing.Point(103, 551);
+            this.SaveSettingsButton.Name = "SaveSettingsButton";
+            this.SaveSettingsButton.Size = new System.Drawing.Size(93, 23);
+            this.SaveSettingsButton.TabIndex = 147;
+            this.SaveSettingsButton.Text = "Save settings";
+            this.SaveSettingsButton.UseVisualStyleBackColor = true;
+            this.SaveSettingsButton.Click += new System.EventHandler(this.SaveSettingsButton_Click);
+            // 
             // ControlSettingsButton
             // 
-            this.ControlSettingsButton.Location = new System.Drawing.Point(2, 456);
+            this.ControlSettingsButton.Location = new System.Drawing.Point(4, 522);
             this.ControlSettingsButton.Name = "ControlSettingsButton";
             this.ControlSettingsButton.Size = new System.Drawing.Size(93, 23);
             this.ControlSettingsButton.TabIndex = 45;
@@ -1703,7 +1770,7 @@ namespace CodeWalker
             this.OptionsRenderTabPage.Controls.Add(this.label14);
             this.OptionsRenderTabPage.Location = new System.Drawing.Point(4, 22);
             this.OptionsRenderTabPage.Name = "OptionsRenderTabPage";
-            this.OptionsRenderTabPage.Size = new System.Drawing.Size(200, 482);
+            this.OptionsRenderTabPage.Size = new System.Drawing.Size(200, 577);
             this.OptionsRenderTabPage.TabIndex = 3;
             this.OptionsRenderTabPage.Text = "Render";
             this.OptionsRenderTabPage.UseVisualStyleBackColor = true;
@@ -1949,7 +2016,7 @@ namespace CodeWalker
             this.OptionsHelpersTabPage.Location = new System.Drawing.Point(4, 22);
             this.OptionsHelpersTabPage.Name = "OptionsHelpersTabPage";
             this.OptionsHelpersTabPage.Padding = new System.Windows.Forms.Padding(3);
-            this.OptionsHelpersTabPage.Size = new System.Drawing.Size(200, 482);
+            this.OptionsHelpersTabPage.Size = new System.Drawing.Size(200, 577);
             this.OptionsHelpersTabPage.TabIndex = 1;
             this.OptionsHelpersTabPage.Text = "Helpers";
             this.OptionsHelpersTabPage.UseVisualStyleBackColor = true;
@@ -2278,7 +2345,7 @@ namespace CodeWalker
             this.OptionsLightingTabPage.Controls.Add(this.ShadowsCheckBox);
             this.OptionsLightingTabPage.Location = new System.Drawing.Point(4, 22);
             this.OptionsLightingTabPage.Name = "OptionsLightingTabPage";
-            this.OptionsLightingTabPage.Size = new System.Drawing.Size(200, 482);
+            this.OptionsLightingTabPage.Size = new System.Drawing.Size(200, 577);
             this.OptionsLightingTabPage.TabIndex = 2;
             this.OptionsLightingTabPage.Text = "Lighting";
             this.OptionsLightingTabPage.UseVisualStyleBackColor = true;
@@ -2589,72 +2656,6 @@ namespace CodeWalker
             this.ShadowsCheckBox.UseVisualStyleBackColor = true;
             this.ShadowsCheckBox.CheckedChanged += new System.EventHandler(this.ShadowsCheckBox_CheckedChanged);
             // 
-            // StatusBarCheckBox
-            // 
-            this.StatusBarCheckBox.AutoSize = true;
-            this.StatusBarCheckBox.Checked = true;
-            this.StatusBarCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.StatusBarCheckBox.Location = new System.Drawing.Point(119, 517);
-            this.StatusBarCheckBox.Name = "StatusBarCheckBox";
-            this.StatusBarCheckBox.Size = new System.Drawing.Size(74, 17);
-            this.StatusBarCheckBox.TabIndex = 145;
-            this.StatusBarCheckBox.Text = "Status bar";
-            this.StatusBarCheckBox.UseVisualStyleBackColor = true;
-            this.StatusBarCheckBox.CheckedChanged += new System.EventHandler(this.StatusBarCheckBox_CheckedChanged);
-            // 
-            // QuitButton
-            // 
-            this.QuitButton.Location = new System.Drawing.Point(105, 569);
-            this.QuitButton.Name = "QuitButton";
-            this.QuitButton.Size = new System.Drawing.Size(93, 23);
-            this.QuitButton.TabIndex = 149;
-            this.QuitButton.Text = "Quit";
-            this.QuitButton.UseVisualStyleBackColor = true;
-            this.QuitButton.Click += new System.EventHandler(this.QuitButton_Click);
-            // 
-            // ReloadSettingsButton
-            // 
-            this.ReloadSettingsButton.Enabled = false;
-            this.ReloadSettingsButton.Location = new System.Drawing.Point(6, 540);
-            this.ReloadSettingsButton.Name = "ReloadSettingsButton";
-            this.ReloadSettingsButton.Size = new System.Drawing.Size(93, 23);
-            this.ReloadSettingsButton.TabIndex = 146;
-            this.ReloadSettingsButton.Text = "Reload settings";
-            this.ReloadSettingsButton.UseVisualStyleBackColor = true;
-            this.ReloadSettingsButton.Visible = false;
-            this.ReloadSettingsButton.Click += new System.EventHandler(this.ReloadSettingsButton_Click);
-            // 
-            // SaveSettingsButton
-            // 
-            this.SaveSettingsButton.Location = new System.Drawing.Point(105, 540);
-            this.SaveSettingsButton.Name = "SaveSettingsButton";
-            this.SaveSettingsButton.Size = new System.Drawing.Size(93, 23);
-            this.SaveSettingsButton.TabIndex = 147;
-            this.SaveSettingsButton.Text = "Save settings";
-            this.SaveSettingsButton.UseVisualStyleBackColor = true;
-            this.SaveSettingsButton.Click += new System.EventHandler(this.SaveSettingsButton_Click);
-            // 
-            // ReloadShadersButton
-            // 
-            this.ReloadShadersButton.Location = new System.Drawing.Point(6, 569);
-            this.ReloadShadersButton.Name = "ReloadShadersButton";
-            this.ReloadShadersButton.Size = new System.Drawing.Size(93, 23);
-            this.ReloadShadersButton.TabIndex = 148;
-            this.ReloadShadersButton.Text = "Reload shaders";
-            this.ReloadShadersButton.UseVisualStyleBackColor = true;
-            this.ReloadShadersButton.Click += new System.EventHandler(this.ReloadShadersButton_Click);
-            // 
-            // ErrorConsoleCheckBox
-            // 
-            this.ErrorConsoleCheckBox.AutoSize = true;
-            this.ErrorConsoleCheckBox.Location = new System.Drawing.Point(14, 517);
-            this.ErrorConsoleCheckBox.Name = "ErrorConsoleCheckBox";
-            this.ErrorConsoleCheckBox.Size = new System.Drawing.Size(88, 17);
-            this.ErrorConsoleCheckBox.TabIndex = 144;
-            this.ErrorConsoleCheckBox.Text = "Error console";
-            this.ErrorConsoleCheckBox.UseVisualStyleBackColor = true;
-            this.ErrorConsoleCheckBox.CheckedChanged += new System.EventHandler(this.ErrorConsoleCheckBox_CheckedChanged);
-            // 
             // ToolsPanelHideButton
             // 
             this.ToolsPanelHideButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -2746,6 +2747,7 @@ namespace CodeWalker
             // ToolsMenu
             // 
             this.ToolsMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.ToolsMenuConfigureGame,
             this.ToolsMenuRPFBrowser,
             this.ToolsMenuRPFExplorer,
             this.ToolsMenuSelectionInfo,
@@ -2762,12 +2764,19 @@ namespace CodeWalker
             this.ToolsMenuExtractShaders,
             this.ToolsMenuOptions});
             this.ToolsMenu.Name = "ToolsMenu";
-            this.ToolsMenu.Size = new System.Drawing.Size(181, 356);
+            this.ToolsMenu.Size = new System.Drawing.Size(171, 356);
+            // 
+            // ToolsMenuConfigureGame
+            // 
+            this.ToolsMenuConfigureGame.Name = "ToolsMenuConfigureGame";
+            this.ToolsMenuConfigureGame.Size = new System.Drawing.Size(170, 22);
+            this.ToolsMenuConfigureGame.Text = "Configure Game...";
+            this.ToolsMenuConfigureGame.Click += new System.EventHandler(this.ToolsMenuConfigureGame_Click);
             // 
             // ToolsMenuRPFBrowser
             // 
             this.ToolsMenuRPFBrowser.Name = "ToolsMenuRPFBrowser";
-            this.ToolsMenuRPFBrowser.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuRPFBrowser.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuRPFBrowser.Text = "RPF Browser...";
             this.ToolsMenuRPFBrowser.Visible = false;
             this.ToolsMenuRPFBrowser.Click += new System.EventHandler(this.ToolsMenuRPFBrowser_Click);
@@ -2775,14 +2784,14 @@ namespace CodeWalker
             // ToolsMenuRPFExplorer
             // 
             this.ToolsMenuRPFExplorer.Name = "ToolsMenuRPFExplorer";
-            this.ToolsMenuRPFExplorer.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuRPFExplorer.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuRPFExplorer.Text = "RPF Explorer...";
             this.ToolsMenuRPFExplorer.Click += new System.EventHandler(this.ToolsMenuRPFExplorer_Click);
             // 
             // ToolsMenuSelectionInfo
             // 
             this.ToolsMenuSelectionInfo.Name = "ToolsMenuSelectionInfo";
-            this.ToolsMenuSelectionInfo.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuSelectionInfo.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuSelectionInfo.Text = "Selection info...";
             this.ToolsMenuSelectionInfo.Click += new System.EventHandler(this.ToolsMenuSelectionInfo_Click);
             // 
@@ -2790,7 +2799,7 @@ namespace CodeWalker
             // 
             this.ToolsMenuProjectWindow.Enabled = false;
             this.ToolsMenuProjectWindow.Name = "ToolsMenuProjectWindow";
-            this.ToolsMenuProjectWindow.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuProjectWindow.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuProjectWindow.Text = "Project window...";
             this.ToolsMenuProjectWindow.Click += new System.EventHandler(this.ToolsMenuProjectWindow_Click);
             // 
@@ -2798,14 +2807,22 @@ namespace CodeWalker
             // 
             this.ToolsMenuCutsceneViewer.Enabled = false;
             this.ToolsMenuCutsceneViewer.Name = "ToolsMenuCutsceneViewer";
-            this.ToolsMenuCutsceneViewer.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuCutsceneViewer.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuCutsceneViewer.Text = "Cutscene viewer...";
             this.ToolsMenuCutsceneViewer.Click += new System.EventHandler(this.ToolsMenuCutsceneViewer_Click);
+            // 
+            // ToolsMenuAudioExplorer
+            // 
+            this.ToolsMenuAudioExplorer.Enabled = false;
+            this.ToolsMenuAudioExplorer.Name = "ToolsMenuAudioExplorer";
+            this.ToolsMenuAudioExplorer.Size = new System.Drawing.Size(170, 22);
+            this.ToolsMenuAudioExplorer.Text = "Audio explorer...";
+            this.ToolsMenuAudioExplorer.Click += new System.EventHandler(this.ToolsMenuAudioExplorer_Click);
             // 
             // ToolsMenuWorldSearch
             // 
             this.ToolsMenuWorldSearch.Name = "ToolsMenuWorldSearch";
-            this.ToolsMenuWorldSearch.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuWorldSearch.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuWorldSearch.Text = "World search...";
             this.ToolsMenuWorldSearch.Click += new System.EventHandler(this.ToolsMenuWorldSearch_Click);
             // 
@@ -2813,14 +2830,14 @@ namespace CodeWalker
             // 
             this.ToolsMenuBinarySearch.Enabled = false;
             this.ToolsMenuBinarySearch.Name = "ToolsMenuBinarySearch";
-            this.ToolsMenuBinarySearch.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuBinarySearch.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuBinarySearch.Text = "Binary search...";
             this.ToolsMenuBinarySearch.Click += new System.EventHandler(this.ToolsMenuBinarySearch_Click);
             // 
             // ToolsMenuJenkGen
             // 
             this.ToolsMenuJenkGen.Name = "ToolsMenuJenkGen";
-            this.ToolsMenuJenkGen.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuJenkGen.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuJenkGen.Text = "JenkGen...";
             this.ToolsMenuJenkGen.Click += new System.EventHandler(this.ToolsMenuJenkGen_Click);
             // 
@@ -2828,44 +2845,55 @@ namespace CodeWalker
             // 
             this.ToolsMenuJenkInd.Enabled = false;
             this.ToolsMenuJenkInd.Name = "ToolsMenuJenkInd";
-            this.ToolsMenuJenkInd.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuJenkInd.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuJenkInd.Text = "JenkInd...";
             this.ToolsMenuJenkInd.Click += new System.EventHandler(this.ToolsMenuJenkInd_Click);
             // 
             // ToolsMenuExtractScripts
             // 
             this.ToolsMenuExtractScripts.Name = "ToolsMenuExtractScripts";
-            this.ToolsMenuExtractScripts.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuExtractScripts.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuExtractScripts.Text = "Extract scripts...";
             this.ToolsMenuExtractScripts.Click += new System.EventHandler(this.ToolsMenuExtractScripts_Click);
             // 
             // ToolsMenuExtractTextures
             // 
             this.ToolsMenuExtractTextures.Name = "ToolsMenuExtractTextures";
-            this.ToolsMenuExtractTextures.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuExtractTextures.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuExtractTextures.Text = "Extract textures...";
             this.ToolsMenuExtractTextures.Click += new System.EventHandler(this.ToolsMenuExtractTextures_Click);
             // 
             // ToolsMenuExtractRawFiles
             // 
             this.ToolsMenuExtractRawFiles.Name = "ToolsMenuExtractRawFiles";
-            this.ToolsMenuExtractRawFiles.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuExtractRawFiles.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuExtractRawFiles.Text = "Extract raw files...";
             this.ToolsMenuExtractRawFiles.Click += new System.EventHandler(this.ToolsMenuExtractRawFiles_Click);
             // 
             // ToolsMenuExtractShaders
             // 
             this.ToolsMenuExtractShaders.Name = "ToolsMenuExtractShaders";
-            this.ToolsMenuExtractShaders.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuExtractShaders.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuExtractShaders.Text = "Extract shaders...";
             this.ToolsMenuExtractShaders.Click += new System.EventHandler(this.ToolsMenuExtractShaders_Click);
             // 
             // ToolsMenuOptions
             // 
             this.ToolsMenuOptions.Name = "ToolsMenuOptions";
-            this.ToolsMenuOptions.Size = new System.Drawing.Size(180, 22);
+            this.ToolsMenuOptions.Size = new System.Drawing.Size(170, 22);
             this.ToolsMenuOptions.Text = "Options...";
             this.ToolsMenuOptions.Click += new System.EventHandler(this.ToolsMenuOptions_Click);
+            // 
+            // ToolbarPanel
+            // 
+            this.ToolbarPanel.BackColor = System.Drawing.SystemColors.Control;
+            this.ToolbarPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.ToolbarPanel.Controls.Add(this.Toolbar);
+            this.ToolbarPanel.Location = new System.Drawing.Point(12, 12);
+            this.ToolbarPanel.Name = "ToolbarPanel";
+            this.ToolbarPanel.Size = new System.Drawing.Size(557, 26);
+            this.ToolbarPanel.TabIndex = 7;
+            this.ToolbarPanel.Visible = false;
             // 
             // Toolbar
             // 
@@ -3559,17 +3587,6 @@ namespace CodeWalker
             this.ToolbarCameraOrthographicButton.Text = "Orthographic";
             this.ToolbarCameraOrthographicButton.Click += new System.EventHandler(this.ToolbarCameraOrthographicButton_Click);
             // 
-            // ToolbarPanel
-            // 
-            this.ToolbarPanel.BackColor = System.Drawing.SystemColors.Control;
-            this.ToolbarPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.ToolbarPanel.Controls.Add(this.Toolbar);
-            this.ToolbarPanel.Location = new System.Drawing.Point(12, 12);
-            this.ToolbarPanel.Name = "ToolbarPanel";
-            this.ToolbarPanel.Size = new System.Drawing.Size(557, 26);
-            this.ToolbarPanel.TabIndex = 7;
-            this.ToolbarPanel.Visible = false;
-            // 
             // SubtitleLabel
             // 
             this.SubtitleLabel.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
@@ -3579,7 +3596,7 @@ namespace CodeWalker
             this.SubtitleLabel.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.SubtitleLabel.Location = new System.Drawing.Point(455, 555);
             this.SubtitleLabel.Name = "SubtitleLabel";
-            this.SubtitleLabel.Size = new System.Drawing.Size(84, 18);
+            this.SubtitleLabel.Size = new System.Drawing.Size(83, 18);
             this.SubtitleLabel.TabIndex = 8;
             this.SubtitleLabel.Text = "Test Subtitle";
             this.SubtitleLabel.TextAlign = System.Drawing.ContentAlignment.TopCenter;
@@ -3589,14 +3606,6 @@ namespace CodeWalker
             // SubtitleTimer
             // 
             this.SubtitleTimer.Tick += new System.EventHandler(this.SubtitleTimer_Tick);
-            // 
-            // ToolsMenuAudioExplorer
-            // 
-            this.ToolsMenuAudioExplorer.Enabled = false;
-            this.ToolsMenuAudioExplorer.Name = "ToolsMenuAudioExplorer";
-            this.ToolsMenuAudioExplorer.Size = new System.Drawing.Size(180, 22);
-            this.ToolsMenuAudioExplorer.Text = "Audio explorer...";
-            this.ToolsMenuAudioExplorer.Click += new System.EventHandler(this.ToolsMenuAudioExplorer_Click);
             // 
             // WorldForm
             // 
@@ -3617,6 +3626,7 @@ namespace CodeWalker
             this.Text = "CodeWalker";
             this.Deactivate += new System.EventHandler(this.WorldForm_Deactivate);
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.WorldForm_FormClosing);
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.WorldForm_FormClosed);
             this.Load += new System.EventHandler(this.WorldForm_Load);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.WorldForm_KeyDown);
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.WorldForm_KeyUp);
@@ -3653,7 +3663,6 @@ namespace CodeWalker
             this.tabPage13.ResumeLayout(false);
             this.SelectionExtensionTabPage.ResumeLayout(false);
             this.OptionsTabPage.ResumeLayout(false);
-            this.OptionsTabPage.PerformLayout();
             this.OptionsTabControl.ResumeLayout(false);
             this.OptionsGeneralTabPage.ResumeLayout(false);
             this.OptionsGeneralTabPage.PerformLayout();
@@ -3679,10 +3688,10 @@ namespace CodeWalker
             this.SelectedMarkerPanel.ResumeLayout(false);
             this.SelectedMarkerPanel.PerformLayout();
             this.ToolsMenu.ResumeLayout(false);
-            this.Toolbar.ResumeLayout(false);
-            this.Toolbar.PerformLayout();
             this.ToolbarPanel.ResumeLayout(false);
             this.ToolbarPanel.PerformLayout();
+            this.Toolbar.ResumeLayout(false);
+            this.Toolbar.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -3714,7 +3723,6 @@ namespace CodeWalker
         private System.Windows.Forms.ToolStripStatusLabel StatsLabel;
         private System.Windows.Forms.TrackBar DetailTrackBar;
         private System.Windows.Forms.CheckBox DynamicLODCheckBox;
-        private System.Windows.Forms.Button ReloadShadersButton;
         private System.Windows.Forms.ComboBox MarkerStyleComboBox;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.ComboBox LocatorStyleComboBox;
@@ -3752,11 +3760,11 @@ namespace CodeWalker
         private System.Windows.Forms.Button ToolsPanelExpandButton;
         private System.Windows.Forms.Button AddSelectionMarkerButton;
         private System.Windows.Forms.CheckBox FullScreenCheckBox;
-        private System.Windows.Forms.Button QuitButton;
-        private System.Windows.Forms.Button ReloadSettingsButton;
+        private System.Windows.Forms.Button ResetSettingsButton;
         private System.Windows.Forms.Button SaveSettingsButton;
         private System.Windows.Forms.Button ToolsButton;
         private System.Windows.Forms.ContextMenuStrip ToolsMenu;
+        private System.Windows.Forms.ToolStripMenuItem ToolsMenuConfigureGame;
         private System.Windows.Forms.ToolStripMenuItem ToolsMenuRPFBrowser;
         private System.Windows.Forms.ToolStripMenuItem ToolsMenuBinarySearch;
         private System.Windows.Forms.ToolStripMenuItem ToolsMenuJenkGen;
@@ -3968,5 +3976,7 @@ namespace CodeWalker
         private System.Windows.Forms.ToolStripMenuItem ToolbarSelectCalmingQuadButton;
         private System.Windows.Forms.ToolStripMenuItem ToolbarSelectWaveQuadButton;
         private System.Windows.Forms.ToolStripMenuItem ToolsMenuAudioExplorer;
+        private System.Windows.Forms.CheckBox SaveTimeOfDayCheckBox;
+        private System.Windows.Forms.CheckBox SavePositionCheckBox;
     }
 }

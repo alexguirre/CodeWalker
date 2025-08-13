@@ -697,16 +697,30 @@ namespace CodeWalker.World
 
         }
 
-        public YndFile[] GetYndFilesThatDependOnYndFile(YndFile file)
+        public HashSet<YndFile> GetYndFilesThatDependOnYndFile(YndFile file)
         {
-            return AllYnds.Values.Where(y => y.Links.Any(l => l.Node2.AreaID == file.AreaID)).ToArray();
+            HashSet<YndFile> result = new HashSet<YndFile>();
+            int targetAreaID = file.AreaID; // Cache to avoid repeated property access
+
+            foreach (var ynd in AllYnds.Values)
+            {
+                foreach (var link in ynd.Links)
+                {
+                    if (link.Node2.AreaID == targetAreaID)
+                    {
+                        result.Add(ynd);
+                        break; // No need to check more links for this YndFile
+                    }
+                }
+            }
+
+            return result;
         }
 
         public void MoveYndArea(YndFile ynd, int desiredX, int desiredY)
         {
             var xDir = Math.Min(1, Math.Max(-1, desiredX - ynd.CellX));
             var yDir = Math.Min(1, Math.Max(-1, desiredY - ynd.CellY));
-
             var x = desiredX;
             var y = desiredY;
 
@@ -718,11 +732,9 @@ namespace CodeWalker.World
                     {
                         break;
                     }
-
                     x += xDir;
                 }
             }
-
             if (yDir != 0)
             {
                 while (y >= 0 && y <= 31)
@@ -731,16 +743,61 @@ namespace CodeWalker.World
                     {
                         break;
                     }
-
                     y += yDir;
                 }
             }
 
+            var dx = x - ynd.CellX;
+            var dy = y - ynd.CellY;
+            var areaId = y * 32 + x;
+            var areaIdorig = ynd.AreaID;
+            var changed = ynd.AreaID != areaId;
             ynd.CellX = x;
             ynd.CellY = y;
-            var areaId = y * 32 + x;
             ynd.AreaID = areaId;
             ynd.Name = $"nodes{areaId}";
+            if (changed)
+            {
+                var nodes = ynd.Nodes;
+                if (nodes != null)
+                {
+                    for (int i = 0; i < nodes.Length; i++)
+                    {
+                        var node = nodes[i];
+                        node.SetPosition(node.Position + new Vector3(512 * dx, 512 * dy, 0));
+                        if (node.AreaID == areaIdorig)
+                        {
+                            node.AreaID = (ushort)areaId;
+                        }
+                    }
+                }
+                var links = ynd.Links;
+                if (links != null)
+                {
+                    for (int i = 0; i < links.Length; i++)
+                    {
+                        var link = links[i];
+                        if (link._RawData.AreaID == areaIdorig)
+                        {
+                            link._RawData.AreaID = (ushort)areaId;
+                        }
+                    }
+                }
+                var juncs = ynd.Junctions;
+                if (juncs != null)
+                {
+                    for (int i = 0; i < juncs.Length; i++)
+                    {
+                        var junc = juncs[i];
+                        junc.PositionX += (short)(512 * dx);
+                        junc.PositionY += (short)(512 * dy);
+                    }
+                }
+                ynd.UpdateAllNodePositions();
+                ynd.UpdateBoundingBox();
+                ynd.UpdateTriangleVertices(null);
+                ynd.BuildStructs();
+            }
             NodeGrid.UpdateYnd(ynd);
         }
 

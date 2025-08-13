@@ -64,7 +64,7 @@ namespace CodeWalker.Project.Panels
                 EntityAddToProjectButton.Enabled = false;
                 EntityDeleteButton.Enabled = false;
                 EntityArchetypeTextBox.Text = string.Empty;
-                EntityArchetypeHashLabel.Text = "Hash: 0";
+                EntityArchetypeHashLabel.Text = "# 0";
                 EntityFlagsTextBox.Text = string.Empty;
                 EntityGuidTextBox.Text = string.Empty;
                 EntityPositionTextBox.Text = string.Empty;
@@ -99,7 +99,7 @@ namespace CodeWalker.Project.Panels
                 EntityAddToProjectButton.Enabled = CurrentEntity.Ymap != null ? !ProjectForm.YmapExistsInProject(CurrentEntity.Ymap) : !ProjectForm.YtypExistsInProject(CurrentEntity.MloParent?.Archetype?.Ytyp);
                 EntityDeleteButton.Enabled = !EntityAddToProjectButton.Enabled;
                 EntityArchetypeTextBox.Text = e.archetypeName.ToString();
-                EntityArchetypeHashLabel.Text = "Hash: " + e.archetypeName.Hash.ToString();
+                EntityArchetypeHashLabel.Text = "# " + e.archetypeName.Hash.ToString();
                 EntityFlagsTextBox.Text = e.flags.ToString();
                 EntityGuidTextBox.Text = e.guid.ToString();
                 EntityPositionTextBox.Text = FloatUtil.GetVector3String(e.position);
@@ -246,7 +246,7 @@ namespace CodeWalker.Project.Panels
                 hash = JenkHash.GenHash(name);
                 JenkIndex.Ensure(name);
             }
-            EntityArchetypeHashLabel.Text = "Hash: " + hash.ToString();
+            EntityArchetypeHashLabel.Text = "# " + hash.ToString();
 
             var arch = ProjectForm.GameFileCache.GetArchetype(hash);
             if (arch == null)
@@ -381,26 +381,17 @@ namespace CodeWalker.Project.Panels
             Vector3 v = FloatUtil.ParseVector3String(EntityPositionTextBox.Text);
             lock (ProjectForm.ProjectSyncRoot)
             {
-                if (CurrentEntity.MloParent != null)
+                if (CurrentEntity._CEntityDef.position != v)
                 {
-                    v = CurrentEntity.MloParent.Position + CurrentEntity.MloParent.Orientation.Multiply(v);
-                    CurrentEntity.SetPosition(v);
+                    CurrentEntity.SetPositionRaw(v);
                     ProjectItemChanged();
-                }
-                else
-                {
-                    if (CurrentEntity.Position != v)
+                    var wf = ProjectForm.WorldForm;
+                    if (wf != null)
                     {
-                        CurrentEntity.SetPosition(v);
-                        ProjectItemChanged();
-                        var wf = ProjectForm.WorldForm;
-                        if (wf != null)
+                        wf.BeginInvoke(new Action(() =>
                         {
-                            wf.BeginInvoke(new Action(() =>
-                            {
-                                wf.SetWidgetPosition(CurrentEntity.WidgetPosition, true);
-                            }));
-                        }
+                            wf.SetWidgetPosition(CurrentEntity.WidgetPosition, true);
+                        }));
                     }
                 }
             }
@@ -416,20 +407,9 @@ namespace CodeWalker.Project.Panels
             {
                 if (CurrentEntity._CEntityDef.rotation != v)
                 {
-                    var wf = ProjectForm.WorldForm;
-
-                    if (CurrentEntity.MloParent != null)
-                    {
-                        var world = Quaternion.Normalize(Quaternion.Multiply(q, CurrentEntity.MloParent.Orientation));
-                        CurrentEntity.SetOrientation(world);
-                    }
-                    else
-                    {
-                        bool useInverse = (CurrentEntity.MloInstance == null);
-                        CurrentEntity.SetOrientation(q, useInverse);
-                    }
-
+                    CurrentEntity.SetOrientationRaw(q);
                     ProjectItemChanged();
+                    var wf = ProjectForm.WorldForm;
                     wf?.BeginInvoke(new Action(() =>
                     {
                         wf.SetWidgetRotation(CurrentEntity.WidgetOrientation, true);

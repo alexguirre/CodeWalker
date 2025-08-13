@@ -44,14 +44,15 @@
             this.TrainNodeTypeComboBox.FormattingEnabled = true;
             this.TrainNodeTypeComboBox.Items.AddRange(new object[] {
             "0 - Default",
-            "1 - Default Station",
-            "2 - Freight Station",
+            "1 - Station Left",
+            "2 - Station Right",
             "3 - (Not used)",
             "4 - Underground",
-            "5 - Underground Station"});
+            "5 - Underground Station Left",
+            "6 - Underground Station Right"});
             this.TrainNodeTypeComboBox.Location = new System.Drawing.Point(76, 45);
             this.TrainNodeTypeComboBox.Name = "TrainNodeTypeComboBox";
-            this.TrainNodeTypeComboBox.Size = new System.Drawing.Size(142, 21);
+            this.TrainNodeTypeComboBox.Size = new System.Drawing.Size(224, 21);
             this.TrainNodeTypeComboBox.TabIndex = 47;
             this.TrainNodeTypeComboBox.SelectedIndexChanged += new System.EventHandler(this.TrainNodeTypeComboBox_SelectedIndexChanged);
             // 

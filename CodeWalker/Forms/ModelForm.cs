@@ -362,9 +362,25 @@ namespace CodeWalker.Forms
                     {
                         if (!weather.Inited)
                         {
-                            //UpdateStatus("Loading weather...");
-                            weather.Init(gameFileCache, UpdateStatus, timecycle);
-                            //UpdateStatus("Weather loaded.");
+                            try
+                            {
+                                UpdateStatus("Loading weather...");
+                                weather.Init(gameFileCache, UpdateStatus, timecycle);
+                                UpdateStatus("Weather loaded.");
+
+                                if (currentArchetype != null)
+                                {
+                                    UpdateStatus("Archetype: " + currentArchetype.Name.ToString());
+                                }
+                                else
+                                {
+                                    UpdateStatus("Ready");
+                                }
+                            }
+                            catch (Exception)
+                            {
+
+                            }
                         }
                         //if (!clouds.Inited)
                         //{
@@ -623,10 +639,34 @@ namespace CodeWalker.Forms
             //called during UpdateWidgets()
             if (newscale == oldscale) return;
             if (selectedLight == null || lightForm == null || !editingLights) return;
-            selectedLight.Falloff = newscale.Z;
+            if (selectedLight.Type == LightType.Capsule)
+            {
+                selectedLight.Falloff = newscale.X;
+                selectedLight.Extent = new Vector3(newscale.Z, newscale.Z, newscale.Z);
+            }
+            else if (selectedLight.Type == LightType.Spot)
+            {
+                selectedLight.Falloff = newscale.Z;
+                selectedLight.ConeInnerAngle = newscale.Y;
+                selectedLight.ConeOuterAngle = newscale.X;
+            }
+            else
+            {
+                selectedLight.Falloff = newscale.Z;
+            }
             selectedLight.UpdateRenderable = true;
         }
 
+        private void SetRotationSnapping(float degrees)
+        {
+            Widget.SnapAngleDegrees = degrees;
+            var cval = (float)SnapAngleUpDown.Value;
+            if (cval != degrees)
+            {
+                SnapAngleUpDown.Value = (decimal)degrees;
+            }
+
+        }
 
         private void RenderSingleItem()
         {
@@ -901,6 +941,7 @@ namespace CodeWalker.Forms
         private void UpdateFormTitle()
         {
             Text = fileName + (modelModified ? "*" : "") + " - CodeWalker by dexyfex";
+            GTAFolder.UpdateEnhancedFormTitle(this);
         }
 
 
@@ -2030,6 +2071,10 @@ namespace CodeWalker.Forms
 
         private void ModelForm_MouseDown(object sender, MouseEventArgs e)
         {
+            if (ActiveControl is NumericUpDown)
+            {
+                ActiveControl = null;
+            }
             switch (e.Button)
             {
                 case MouseButtons.Left: MouseLButtonDown = true; break;
@@ -2646,6 +2691,19 @@ namespace CodeWalker.Forms
         private void ToolbarScaleButton_Click(object sender, EventArgs e)
         {
             SetWidgetMode(ToolbarScaleButton.Checked ? WidgetMode.Default : WidgetMode.Scale);
+        }
+
+        private void OptionsShowOutlinesCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            showLightGizmos = OptionsShowOutlinesCheckBox.Checked;
+        }
+
+        private void SnapAngleUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            if (Widget != null)
+            {
+                SetRotationSnapping((float)SnapAngleUpDown.Value);
+            }
         }
     }
 }

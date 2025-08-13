@@ -315,9 +315,8 @@ namespace CodeWalker.GameFiles
                     {
                         RpfBinaryFileEntry binentry = entry as RpfBinaryFileEntry;
 
-                        //search all the sub resources for YSC files. (recurse!)
-                        string lname = binentry.NameLower;
-                        if (lname.EndsWith(".rpf") && binentry.Path.Length < 5000) // a long path is most likely an attempt to crash CW, so skip it
+                        var lname = binentry.NameLower;
+                        if (lname.EndsWith(".rpf") && IsValidPath(binentry.Path))
                         {
                             br.BaseStream.Position = StartPos + ((long)binentry.FileOffset * 512);
 
@@ -1172,15 +1171,17 @@ namespace CodeWalker.GameFiles
             //find the smallest available hole from the list.
             uint found = 0;
             uint foundsize = 0xFFFFFFFF;
-            
-            for (int i = 1; i < allfiles.Count(); i++)
-            {
-                RpfFileEntry e1 = allfiles[i - 1];
-                RpfFileEntry e2 = allfiles[i];
 
-                uint e1cnt = GetBlockCount(e1.GetFileSize());
-                uint e1end = e1.FileOffset + e1cnt;
+            uint e1end = GetHeaderBlockCount();//start searching for space after the end of the header
+            uint e1next = e1end;
+
+            for (int i = 0; i < allfiles.Count(); i++)
+            {
+                RpfFileEntry e2 = allfiles[i];
+                uint e2cnt = GetBlockCount(e2.GetFileSize());
                 uint e2beg = e2.FileOffset;
+                e1end = e1next;
+                e1next = e2.FileOffset + e2cnt;
                 if ((e2beg > ignorestart) && (e1end < ignoreend))
                 {
                     continue; //this space is in the ignore area.
@@ -1436,21 +1437,50 @@ namespace CodeWalker.GameFiles
         }
 
 
-        public long GetDefragmentedFileSize()
+        public long GetDefragmentedFileSize(bool recursive = true)
         {
             //this represents the size the file would be when fully defragmented.
-            uint blockcount = GetHeaderBlockCount();
 
-            foreach (var entry in AllEntries)
+            if (!recursive)
             {
-                var fentry = entry as RpfFileEntry;
-                if (fentry != null)
-                {
-                    blockcount += GetBlockCount(fentry.GetFileSize());
-                }
-            }
+                uint blockcount = GetHeaderBlockCount();
 
-            return (long)blockcount * 512;
+
+                foreach (var entry in AllEntries)
+                {
+                    var fentry = entry as RpfFileEntry;
+                    if (fentry != null)
+                    {
+                        blockcount += GetBlockCount(fentry.GetFileSize());
+                    }
+                }
+
+                return (long)blockcount * 512;
+            }
+            else
+            {
+                uint blockcount = GetHeaderBlockCount();
+                long childRpfsSize = 0;
+
+                foreach (var entry in AllEntries)
+                {
+                    var fentry = entry as RpfFileEntry;
+                    if (fentry != null)
+                    {
+                        var childRpf = this.FindChildArchive(fentry);
+                        if (childRpf == null)
+                        {
+                            blockcount += GetBlockCount(fentry.GetFileSize());
+                        }
+                        else
+                        {
+                            childRpfsSize += childRpf.GetDefragmentedFileSize(true);
+                        }
+                    }
+                }
+
+                return (long)blockcount * 512 + childRpfsSize;
+            }
         }
 
 
@@ -1480,7 +1510,7 @@ namespace CodeWalker.GameFiles
 
             string fpath = gtafolder;
             fpath = fpath.EndsWith("\\") ? fpath : fpath + "\\";
-            fpath = fpath + relpath;
+            fpath = relpath.Contains(":") ? relpath : fpath + relpath;
 
             if (File.Exists(fpath))
             {
@@ -1545,7 +1575,7 @@ namespace CodeWalker.GameFiles
                 {
                     parent.InsertFileSpace(bw, entry);
 
-                    fstream.Position = parent.StartPos + entry.FileOffset * 512;
+                    fstream.Position = parent.StartPos + ((long)entry.FileOffset * 512);
 
                     file.WriteNewArchive(bw, encryption);
                 }
@@ -1718,8 +1748,8 @@ namespace CodeWalker.GameFiles
                 using (var bw = new BinaryWriter(fstream))
                 {
                     parent.InsertFileSpace(bw, entry);
-                    long bbeg = parent.StartPos + (entry.FileOffset * 512);
-                    long bend = bbeg + (GetBlockCount(entry.GetFileSize()) * 512);
+                    long bbeg = parent.StartPos + ((long)entry.FileOffset * 512);
+                    long bend = bbeg + ((long)GetBlockCount(entry.GetFileSize()) * 512);
                     fstream.Position = bbeg;
                     fstream.Write(data, 0, data.Length);
                     WritePadding(fstream, bend); //write 0's until the end of the block.
@@ -1733,7 +1763,7 @@ namespace CodeWalker.GameFiles
                 RpfFile file = new RpfFile(name, rpath, data.LongLength);
                 file.Parent = parent;
                 file.ParentFileEntry = entry as RpfBinaryFileEntry;
-                file.StartPos = parent.StartPos + (entry.FileOffset * 512);
+                file.StartPos = parent.StartPos + ((long)entry.FileOffset * 512);
                 parent.Children.Add(file);
 
                 using (var fstream = File.OpenRead(fpath))
@@ -1863,21 +1893,79 @@ namespace CodeWalker.GameFiles
         }
 
 
-        public static bool EnsureValidEncryption(RpfFile file, Func<RpfFile, bool> confirm)
+        public static bool IsValidEncryption(RpfFile file, bool recursive = false)
+        {
+            if (file == null) return false;
+
+            if (file.Encryption != RpfEncryption.OPEN) return false;
+
+            var parent = file.Parent;
+            while (parent != null)
+            {
+                if (parent.Encryption != RpfEncryption.OPEN) return false;
+                parent = parent.Parent;
+            }
+
+            if (recursive && (file.Children != null))
+            {
+                var stack = new Stack<RpfFile>(file.Children);
+                while (stack.Count > 0)
+                {
+                    var child = stack.Pop();
+                    if (child == null) continue;
+                    if (child.Encryption != RpfEncryption.OPEN)
+                    {
+                        return false;
+                    }
+                    if (child.Children != null)
+                    {
+                        foreach (var cchild in child.Children)
+                        {
+                            stack.Push(cchild);
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public static bool EnsureValidEncryption(RpfFile file, Func<RpfFile, bool> confirm, bool recursive = false)
         {
             if (file == null) return false;
 
             //currently assumes OPEN is the valid encryption type.
             //TODO: support other encryption types!
 
-            bool needsupd = false;
+            var files = new List<RpfFile>();
+            if (recursive && (file.Children != null))
+            {
+                var stack = new Stack<RpfFile>(file.Children);
+                while (stack.Count > 0)
+                {
+                    var child = stack.Pop();
+                    if (child == null) continue;
+                    if (child.Encryption != RpfEncryption.OPEN)
+                    {
+                        files.Add(child);
+                    }
+                    if (child.Children != null)
+                    {
+                        foreach (var cchild in child.Children)
+                        {
+                            stack.Push(cchild);
+                        }
+                    }
+                }
+                files.Reverse();//the list is in parent>child order, needs to be in child>parent order here
+            }
+            var needsupd = (files.Count > 0);
             var f = file;
-            List<RpfFile> files = new List<RpfFile>();
             while (f != null)
             {
                 if (f.Encryption != RpfEncryption.OPEN)
                 {
-                    if (!confirm(f))
+                    if ((confirm != null) && !confirm(f))
                     {
                         return false;
                     }
@@ -1914,9 +2002,24 @@ namespace CodeWalker.GameFiles
         }
 
 
-        public static void Defragment(RpfFile file, Action<string, float> progress = null)
+        public static void Defragment(RpfFile file, Action<string, float> progress = null, bool recursive = true)
         {
             if (file?.AllEntries == null) return;
+
+            if (recursive)
+            {
+                foreach (var entry in file?.AllEntries) 
+                {
+                    if (entry is RpfFileEntry)
+                    {
+                        var childRpf = file.FindChildArchive(entry as RpfFileEntry);
+                        if (childRpf != null)
+                        {
+                            Defragment(childRpf, null, true);
+                        }
+                    }
+                }
+            }
 
             string fpath = file.GetPhysicalFilePath();
             using (var fstream = File.Open(fpath, FileMode.Open, FileAccess.ReadWrite))
@@ -2014,6 +2117,23 @@ namespace CodeWalker.GameFiles
                 dirpath = dirpath + "\\";
             }
             return dirpath;
+        }
+
+        private static bool IsValidPath(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            if (path.Length > 500) return false; //a long path is most likely an attempt to crash CW, so skip it
+            var dirc = 0;
+            for (int i = 0; i < path.Length; i++)
+            {
+                var c = path[i];
+                if (c == ':') return false; //what kind of person puts this in a file name?
+                if (c == ';') return false;
+                if (c == '/') dirc++;
+                if (c == '\\') dirc++;
+            }
+            if (dirc > 20) return false;//20 levels deep.. are you mad?!?
+            return true;
         }
 
 

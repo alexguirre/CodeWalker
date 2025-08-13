@@ -27,7 +27,7 @@ namespace CodeWalker.GameFiles
         {
             //direct load from a raw, compressed ytd file
 
-            RpfFile.LoadResourceFile(this, data, 13);
+            RpfFile.LoadResourceFile(this, data, (uint)GetVersion(RpfManager.IsGen9));
 
             Loaded = true;
         }
@@ -44,6 +44,20 @@ namespace CodeWalker.GameFiles
             }
 
             ResourceDataReader rd = new ResourceDataReader(resentry, data);
+            
+            if (rd.IsGen9)
+            {
+                switch (resentry.Version)
+                {
+                    case 5:
+                        break;
+                    case 13:
+                        rd.IsGen9 = false;
+                        break;
+                    default:
+                        break;
+                }
+            }
 
 
             TextureDict = rd.ReadBlock<TextureDictionary>();
@@ -54,16 +68,28 @@ namespace CodeWalker.GameFiles
             //    MemoryUsage += TextureDict.MemoryUsage;
             //}
 
+            //var analyzer = new ResourceAnalyzer(rd);
+
         }
 
 
         public byte[] Save()
         {
-            byte[] data = ResourceBuilder.Build(TextureDict, 13); //ytd is type/version 13...
+            var gen9 = RpfManager.IsGen9;
+            if (gen9)
+            {
+                TextureDict?.EnsureGen9();
+            }
+
+            byte[] data = ResourceBuilder.Build(TextureDict, GetVersion(gen9), true, gen9);
 
             return data;
         }
 
+        public int GetVersion(bool gen9)
+        {
+            return gen9 ? 5 : 13;
+        }
 
     }
 

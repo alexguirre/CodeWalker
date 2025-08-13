@@ -104,6 +104,7 @@ namespace CodeWalker
             Renderer.renderfragwindows = false;
             Renderer.SelectionFlagsTestAll = true;
 
+            GTAFolder.UpdateEnhancedFormTitle(this);
         }
 
 
@@ -281,7 +282,7 @@ namespace CodeWalker
 
             try
             {
-                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, Settings.Default.Key);
+                GTA5Keys.LoadFromPath(GTAFolder.CurrentGTAFolder, GTAFolder.IsGen9, Settings.Default.Key);
             }
             catch
             {
