@@ -238,6 +238,7 @@ namespace CodeWalker.GameFiles
                 //GetArchetypeWindDisturbanceExtensionsCsv();
                 //GetArchetypeExplosionExtensionsCsv();
                 //GetArchetypeMloTimecycleModifiersCsv();
+                //GetGen9ShaderParametersCsv();
                 //GetModelsCsv();
                 //GetFragTypesCsv();
                 //GetFragTypeGroupsCsv();
@@ -248,7 +249,7 @@ namespace CodeWalker.GameFiles
                 //GetEnvClothModelsCsv();
                 //GetCharClothModelsCsv();
                 //GetDwdsCsv();
-                GetBoneLimitsCsv();
+                //GetBoneLimitsCsv();
                 //ExportCableModels();
                 //string typestr = PsoTypes.GetTypesString();
             }
@@ -5777,6 +5778,163 @@ namespace CodeWalker.GameFiles
 
 
         }
+        public void GetGen9ShaderParametersCsv()
+        {
+            if (!GTAGen9) { return; }
+
+            JenkIndex.Ensure("diffusetexture2");
+            JenkIndex.Ensure("environmenttex");
+            JenkIndex.Ensure("environmenttex2d");
+
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\gen9_shader_parameters.csv"))
+            {
+                bool doydr = true;
+                bool doydd = true;
+                bool doyft = true;
+                bool doypt = true;
+
+                w.WriteLine("AssetPath,AssetName,ExtraId,ShaderIndex,ShaderName,ParameterName,Data");
+
+                string d2s(object data)
+                {
+                    if (data == null)
+                    {
+                        return "NULL";
+                    }
+                    else if (data is Vector4 v)
+                    {
+                        return $"{v.X} {v.Y} {v.Z} {v.W}";
+                    }
+                    else if (data is Vector4[] vs)
+                    {
+                        return string.Join("", vs.Select(vv => $"[{vv.X} {vv.Y} {vv.Z} {vv.W}]"));
+                    }
+                    else if (data is TextureBase tex)
+                    {
+                        return "T:" + tex.Name;
+                    }
+                    else
+                    {
+                        throw new ArgumentException(data.ToString());
+                    }
+                }
+
+                void processDrawable(string assetPath, string assetName, string extraId, DrawableBase d)
+                {
+
+                    if (d?.ShaderGroup?.Shaders?.data_items == null)
+                    {
+                        return;
+                    }
+
+                    var shaders = d.ShaderGroup.Shaders.data_items;
+                    for (int i = 0; i < shaders.Length; i++)
+                    {
+                        var s = shaders[i];
+                        foreach (var (p, h) in s.ParametersList.Parameters.Zip(s.ParametersList.Hashes, (a, b) => (a, b)))
+                        {
+                            w.Write(assetPath);
+                            w.Write(",");
+                            w.Write(assetName);
+                            w.Write(",");
+                            w.Write(extraId);
+                            w.Write(",");
+                            w.Write(i);
+                            w.Write(",");
+                            w.Write(s.Name.ToString());
+                            w.Write(",");
+                            w.Write(h.ToString());
+                            w.Write(",");
+                            w.Write(d2s(p.Data));
+                            w.WriteLine();
+                        }
+                    }
+                }
+
+                foreach (RpfFile file in AllRpfs)
+                {
+                    foreach (RpfEntry entry in file.AllEntries)
+                    {
+                        try
+                        {
+                            if (doydr && entry.NameLower.EndsWith(".ydr"))
+                            {
+                                if (entry is RpfResourceFileEntry re)
+                                {
+                                    if (re.Version != 159) continue;
+                                }
+
+                                UpdateStatus(entry.Path);
+                                YdrFile ydr = RpfMan.GetFile<YdrFile>(entry);
+
+                                if (ydr == null) { continue; }
+                                if (ydr.Drawable == null) { continue; }
+                                processDrawable(entry.Path, ydr.Name, "", ydr.Drawable);
+                            }
+                            else if (doydd & entry.NameLower.EndsWith(".ydd"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YddFile ydd = RpfMan.GetFile<YddFile>(entry);
+
+                                if (ydd == null) { continue; }
+                                if (ydd.Dict == null) { continue; }
+                                foreach (var kvp in ydd.Dict)
+                                {
+                                    processDrawable(entry.Path, ydd.Name, kvp.Key.ToString(), kvp.Value);
+                                }
+                            }
+                            else if (doyft && entry.NameLower.EndsWith(".yft"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YftFile yft = RpfMan.GetFile<YftFile>(entry);
+
+                                if (yft == null) { continue; }
+                                if (yft.Fragment == null) { continue; }
+                                if (yft.Fragment.Drawable != null)
+                                {
+                                    processDrawable(entry.Path, yft.Name, $"Main", yft.Fragment.Drawable);
+                                }
+                                if ((yft.Fragment.Cloths != null) && (yft.Fragment.Cloths.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var cloth in yft.Fragment.Cloths.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Cloth#{ci}", cloth.Drawable);
+                                        ci++;
+                                    }
+                                }
+                                if ((yft.Fragment.DrawableArray != null) && (yft.Fragment.DrawableArray.data_items != null))
+                                {
+                                    var ci = 0;
+                                    foreach (var drawable in yft.Fragment.DrawableArray.data_items)
+                                    {
+                                        processDrawable(entry.Path, yft.Name, $"Array#{ci}", drawable);
+                                        ci++;
+                                    }
+                                }
+                            }
+                            else if (doypt && entry.NameLower.EndsWith(".ypt"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YptFile ypt = RpfMan.GetFile<YptFile>(entry);
+
+                                if (ypt == null) { continue; }
+                                if (ypt.DrawableDict == null) { continue; }
+                                foreach (var kvp in ypt.DrawableDict)
+                                {
+                                    processDrawable(entry.Path, ypt.Name, kvp.Key.ToString(), kvp.Value);
+                                }
+                            }
+                        }
+                        catch //(Exception ex)
+                        { }
+                    }
+                }
+
+
+            }
+
+        }
         public void GetArchetypeSpecialAttributesCsv()
         {
             using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\special_attributes.csv"))
@@ -6140,7 +6298,7 @@ namespace CodeWalker.GameFiles
         }
         public void GetModelsCsv()
         {
-            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\grmmodels.csv"))
+            using (var w = new StreamWriter("D:\\re\\gta5\\db\\data\\" + (GTAGen9 ? "gen9_models.csv" : "gen8_models.csv")))
             {
                 w.WriteLine("AssetPath,AssetName,ExtraId,ModelIndex,MatrixCount,Flags,Type,MatrixIndex,Mask,SkinFlag,TessellatedGeometryCount");
                 void processDrawable(string assetPath, string assetName, string extraId, DrawableBase d)
@@ -6264,6 +6422,18 @@ namespace CodeWalker.GameFiles
                                     }
                                 }
 
+                            }
+                            else if (entry.NameLower.EndsWith(".ypt"))
+                            {
+                                UpdateStatus(entry.Path);
+                                YptFile ypt = RpfMan.GetFile<YptFile>(entry);
+
+                                if (ypt == null) { continue; }
+                                if (ypt.DrawableDict == null) { continue; }
+                                foreach (var kvp in ypt.DrawableDict)
+                                {
+                                    processDrawable(entry.Path, ypt.Name, kvp.Key.ToString(), kvp.Value);
+                                }
                             }
 
                         }
