@@ -1,4 +1,5 @@
 ﻿using SharpDX;
+
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -7,6 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace CodeWalker.GameFiles
 {
@@ -1516,6 +1518,20 @@ namespace CodeWalker.GameFiles
 
             if (Bones?.Items != null)
             {
+                CalcTransformations(out var calcTransformations, out var calcTransformationsInverted);
+                for (int i = 0; i < Bones.Items.Length; i++)
+                {
+                    if (Transformations[i] != calcTransformations[i]) // note: SharpDX does approx equality internally
+                    {
+                        Bones.Items[i].TransformationOverride = Transformations[i];
+                    }
+
+                    if (TransformationsInverted[i] != calcTransformationsInverted[i]) // note: SharpDX does approx equality internally
+                    {
+                        Bones.Items[i].TransformationInvertedOverride = TransformationsInverted[i];
+                    }
+                }
+
                 YdrXml.WriteItemArray(sb, Bones.Items, indent, "Bones");
             }
 
@@ -1842,7 +1858,7 @@ namespace CodeWalker.GameFiles
 
         }
 
-        public void BuildTransformations()
+        public void CalcTransformations(out Matrix[] transformations, out Matrix[] transformationsInverted)
         {
             var transforms = new List<Matrix>();
             var transformsinv = new List<Matrix>();
@@ -1903,8 +1919,32 @@ namespace CodeWalker.GameFiles
             //    }
             //}
 
-            Transformations = (transforms.Count > 0) ? transforms.ToArray() : null;
-            TransformationsInverted = (transformsinv.Count > 0) ? transformsinv.ToArray() : null;
+            transformations = (transforms.Count > 0) ? transforms.ToArray() : null;
+            transformationsInverted = (transformsinv.Count > 0) ? transformsinv.ToArray() : null;
+        }
+
+        public void BuildTransformations()
+        {
+            CalcTransformations(out var transformations, out var transformationsInverted);
+
+            if (transformationsInverted != null)
+            {
+                for (int i = 0; i < Bones.Items.Length; i++)
+                {
+                    var bone = Bones.Items[i];
+                    if (bone.TransformationOverride.HasValue)
+                    {
+                        transformations[i] = bone.TransformationOverride.Value;
+                    }
+                    if (bone.TransformationInvertedOverride.HasValue)
+                    {
+                        transformationsInverted[i] = bone.TransformationInvertedOverride.Value;
+                    }
+                }
+            }
+
+            Transformations = transformations;
+            TransformationsInverted = transformationsInverted;
 
         }
 
@@ -2599,6 +2639,9 @@ namespace CodeWalker.GameFiles
 
         public Bone Parent { get; set; }
 
+        public Matrix? TransformationOverride { get; set; }
+        public Matrix? TransformationInvertedOverride { get; set; }
+
         private string_r NameBlock = null;
 
 
@@ -2684,6 +2727,18 @@ namespace CodeWalker.GameFiles
             YdrXml.SelfClosingTag(sb, indent, "Rotation " + FloatUtil.GetVector4XmlString(Rotation.ToVector4()));
             YdrXml.SelfClosingTag(sb, indent, "Scale " + FloatUtil.GetVector3XmlString(Scale));
             YdrXml.SelfClosingTag(sb, indent, "TransformUnk " + FloatUtil.GetVector4XmlString(TransformUnk));
+            if (TransformationOverride.HasValue)
+            {
+                YdrXml.OpenTag(sb, indent, "TransformationOverride");
+                YdrXml.WriteRawArrayContent(sb, TransformationOverride.Value.ToArray(), indent + 1, FloatUtil.ToString, 4);
+                YdrXml.CloseTag(sb, indent, "TransformationOverride");
+            }
+            if (TransformationInvertedOverride.HasValue)
+            {
+                YdrXml.OpenTag(sb, indent, "TransformationInvertedOverride");
+                YdrXml.WriteRawArrayContent(sb, TransformationInvertedOverride.Value.ToArray(), indent + 1, FloatUtil.ToString, 4);
+                YdrXml.CloseTag(sb, indent, "TransformationInvertedOverride");
+            }
         }
         public void ReadXml(XmlNode node)
         {
@@ -2698,6 +2753,26 @@ namespace CodeWalker.GameFiles
             Rotation = Xml.GetChildVector4Attributes(node, "Rotation").ToQuaternion();
             Scale = Xml.GetChildVector3Attributes(node, "Scale");
             TransformUnk = Xml.GetChildVector4Attributes(node, "TransformUnk");
+
+            var cnode = node.SelectSingleNode("TransformationOverride");
+            if (cnode != null)
+            {
+                TransformationOverride = Xml.GetMatrix(cnode);
+            }
+            else
+            {
+                TransformationOverride = null;
+            }
+
+            cnode = node.SelectSingleNode("TransformationInvertedOverride");
+            if (cnode != null)
+            {
+                TransformationInvertedOverride = Xml.GetMatrix(cnode);
+            }
+            else
+            {
+                TransformationInvertedOverride = null;
+            }
         }
 
         public override IResourceBlock[] GetReferences()
